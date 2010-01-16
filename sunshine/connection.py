@@ -188,7 +188,7 @@ class SunshineConnection(telepathy.server.Connection,
             self.profile.onLoginFailure = self.on_loginFailed
             self.profile.onContactStatusChange = self.on_updateContact
             self.profile.onMessageReceived = self.on_messageReceived
-            self.profile.onStatusNoticiesRecv = self.on_StatusNoticiesRecv
+            #self.profile.onStatusNoticiesRecv = self.on_StatusNoticiesRecv
 
             #lets try to make file with contacts etc ^^
             self.configfile = SunshineConfig(int(parameters['account']))
@@ -462,7 +462,6 @@ class SunshineConnection(telepathy.server.Connection,
         logger.info("Failed to get page with server IP adress.")
         self.getServerAdress(uin)
 
-    @async
     def on_contactsImported(self):
         logger.info("No contacts in the XML contacts file yet. Contacts imported.")
 
@@ -472,11 +471,15 @@ class SunshineConnection(telepathy.server.Connection,
         self.makeTelepathyContactsChannel()
         self.makeTelepathyGroupChannels()
         
+        for contact in self.profile.contacts:
+            handle_id = self.get_handle_id_by_name('contact', str(contact.uin))
+            if handle_id != 0:
+                self.get_contact_alias(handle_id)
+            
         self._status = telepathy.CONNECTION_STATUS_CONNECTED
         self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
                 telepathy.CONNECTION_STATUS_REASON_REQUESTED)
 
-    @async
     def on_loginSuccess(self):
         logger.info("Connected")
 
@@ -489,15 +492,14 @@ class SunshineConnection(telepathy.server.Connection,
 
             self.makeTelepathyContactsChannel()
             self.makeTelepathyGroupChannels()
+    
+            self._status = telepathy.CONNECTION_STATUS_CONNECTED
+            self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
+                    telepathy.CONNECTION_STATUS_REASON_REQUESTED)
 
-        self._status = telepathy.CONNECTION_STATUS_CONNECTED
-        self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
-                telepathy.CONNECTION_STATUS_REASON_REQUESTED)
+    #def on_StatusNoticiesRecv(self):
+    #    logger.info("Status noticies received.")
 
-    def on_StatusNoticiesRecv(self):
-        logger.info("Status noticies received.")
-
-    @async
     def on_loginFailed(self):
         logger.info("Method on_loginFailed called.")
         self._status = telepathy.CONNECTION_STATUS_DISCONNECTED

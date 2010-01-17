@@ -223,7 +223,7 @@ class SunshineConnection(telepathy.server.Connection,
             telepathy.server.Connection.__init__(self, 'gadugadu', account, 'sunshine')
             telepathy.server.ConnectionInterfaceRequests.__init__(self)
             SunshinePresence.__init__(self)
-            SunshineAliasing.__init__(self)
+
             SunshineAvatars.__init__(self)
             SunshineCapabilities.__init__(self)
             SunshineContacts.__init__(self)
@@ -440,7 +440,7 @@ class SunshineConnection(telepathy.server.Connection,
 
     def getServerAdress(self, uin):
         logger.info("Fetching GG server adress.")
-        url = 'http://appmsg.gadu-gadu.pl/appsvc/appmsg_ver8.asp?fmnumber=%s&lastmsg=0&version=8.0.0.9103' % (str(uin))
+        url = 'http://appmsg.gadu-gadu.pl/appsvc/appmsg_ver8.asp?fmnumber=%s&lastmsg=0&version=8.0.0.8731' % (str(uin))
         d = getPage(url, timeout=10)
         d.addCallback(self.on_server_adress_fetched, uin)
         d.addErrback(self.on_server_adress_fetched_failed, uin)
@@ -471,10 +471,7 @@ class SunshineConnection(telepathy.server.Connection,
         self.makeTelepathyContactsChannel()
         self.makeTelepathyGroupChannels()
         
-        for contact in self.profile.contacts:
-            handle_id = self.get_handle_id_by_name('contact', str(contact.uin))
-            if handle_id != 0:
-                self.get_contact_alias(handle_id)
+        SunshineAliasing.__init__(self)
             
         self._status = telepathy.CONNECTION_STATUS_CONNECTED
         self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
@@ -492,6 +489,8 @@ class SunshineConnection(telepathy.server.Connection,
 
             self.makeTelepathyContactsChannel()
             self.makeTelepathyGroupChannels()
+
+            SunshineAliasing.__init__(self)
     
             self._status = telepathy.CONNECTION_STATUS_CONNECTED
             self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,

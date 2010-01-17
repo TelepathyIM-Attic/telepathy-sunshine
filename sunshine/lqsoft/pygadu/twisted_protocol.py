@@ -27,6 +27,7 @@ class GaduClient(Protocol):
         self.loginSuccess.addErrback(self._onLoginFailed)
 
         self.importrq_cb = None
+        self.firstPing = True
         self.__pingThread = None
 
     def connectionMade(self):
@@ -166,7 +167,9 @@ class GaduClient(Protocol):
         return self
 
     def sendPing(self):
-        self._sendPacket( Resolver.by_name('PingPacket')() )
+        if self.firstPing != True:
+            self._sendPacket( Resolver.by_name('PingPacket')() )
+        self.firstPing = False
 
     def sendHTMLMessage(self, rcpt, html_text, plain_message):
         klass = Resolver.by_name('MessageOutPacket')

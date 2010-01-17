@@ -54,6 +54,7 @@ class SunshineHandle(telepathy.server.Handle):
         key = (cls, connection._account[0], args)
         if key not in cls.instances.keys():
             instance = object.__new__(cls, connection, *args)
+	    #instance = super(object, self).__init__(cls, connection, *args)
             cls.instances[key] = instance # TRICKY: instances is a weakdict
             return instance, True
         return cls.instances[key], False

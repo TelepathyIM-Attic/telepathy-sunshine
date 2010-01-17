@@ -97,7 +97,7 @@ class LoginPacket(GaduPacket):
     external_port   = ShortField(10)
     image_size      = UByteField(11, default=0xff)
     unknown01       = UByteField(12, default=0x64)
-    version         = VarcharField(13, default="Gadu-Gadu Client build 8.0.0.9103")
+    version         = VarcharField(13, default="Gadu-Gadu Client Build 8.0.0.8731")
     description     = VarcharField(14)
 
     def update_hash(self, password, seed):

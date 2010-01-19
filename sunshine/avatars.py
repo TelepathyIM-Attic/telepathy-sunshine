@@ -55,28 +55,30 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
                 #tutaj kiedys trzeba napisac kod odp za naszego avatara
                 contact = None
                 av_token = handle.name
+                result[handle] = av_token
                 #pass
             else:
                 contact = handle.contact
 
-            if contact is not None:
-                av_token = str(contact.uin)
-            else:
-                av_token = None
-
-            if av_token is not None:
-                result[handle] = av_token
-            elif self._avatar_known:
-                result[handle] = ""
+                if contact is not None:
+                    av_token = str(contact.uin)
+                else:
+                    av_token = None
+    
+                if av_token is not None:
+                    result[handle] = av_token
+                elif self._avatar_known:
+                    result[handle] = ""
         return result
 
     def RequestAvatars(self, contacts):
         for handle_id in contacts:
             handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
             if handle == self.GetSelfHandle():
-                #msn_object = self.msn_client.profile.msn_object
-                #self._msn_object_retrieved(msn_object, handle)
-                pass
+                url = 'http://api.gadu-gadu.pl/avatars/%s/0.xml' % (str(handle.name))
+                d = getPage(url, timeout=10)
+                d.addCallback(self.on_fetch_avatars_file_ok, url, handle_id)
+                d.addErrback(self.on_fetch_avatars_file_failed, url, handle_id)
             else:
                 contact = handle.contact
                 if contact is not None:

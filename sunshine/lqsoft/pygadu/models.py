@@ -117,9 +117,21 @@ class GaduProfile(object):
                 self.addGroup( GaduContactGroup.from_xml(elem) )
 
             for elem in book.find('Contacts').getchildren():
-                contact = GaduContact.from_xml(elem)
-                self.addContact( contact )
-                self.__connection.addNewContact(contact)
+                is_uin_ok = 1
+                try:
+                    check_uin = elem.find("GGNumber")
+                    int(check_uin.text)
+                    if check_uin.text == '':
+                        is_uin_ok = 0
+                except:
+                    is_uin_ok = 0
+                    
+                if is_uin_ok == 1:
+                    contact = GaduContact.from_xml(elem)
+                    self.addContact( contact )
+                    self.__connection.addNewContact(contact)
+                else:
+                    print 'Failed to import contact. Invalid uin: %s.' % check_uin.text
 
             callback()
 

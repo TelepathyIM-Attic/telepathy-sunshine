@@ -121,7 +121,7 @@ class SunshineAliasing(telepathy.server.ConnectionInterfaceAliasing):
             else:
                 alias = contact.ShowName
                 if alias == '' or alias is None:
-                     alias = contact.uin
+                     alias = str(handle.name)
         return alias
 
 #    @async

@@ -60,8 +60,9 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
             else:
                 contact = handle.contact
 
+
                 if contact is not None:
-                    av_token = str(contact.uin)
+                    av_token = str(handle.name)
                 else:
                     av_token = None
     

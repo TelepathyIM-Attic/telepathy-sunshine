@@ -40,15 +40,14 @@ class SunshineTextChannel(telepathy.server.ChannelTypeText):
         self._conn_ref = weakref.ref(conn)
         self.conn = conn
 
-        self.contact = handle.contact
-
+        self.handle = handle
         telepathy.server.ChannelTypeText.__init__(self, conn, manager, props)
 
     def Send(self, message_type, text):
         if message_type == telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL:
-            logger.info("Sending message : %s" % unicode(text))
+            logger.info("Sending message to %s, id %s, body: '%s'" % (str(self.handle.name), str(self.handle.id), unicode(text)))
             msg = text.encode('windows-1250')
-            self.conn.gadu_client.sendTo(int(self.contact.uin), str(text), str(msg))
+            self.conn.gadu_client.sendTo(int(self.handle.name), str(text), str(msg))
         else:
             raise telepathy.NotImplemented("Unhandled message type")
         self.Sent(int(time.time()), message_type, text)

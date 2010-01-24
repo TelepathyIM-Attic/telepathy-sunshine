@@ -72,6 +72,7 @@ class SunshineAliasing(telepathy.server.ConnectionInterfaceAliasing):
                 self.AliasesChanged([(handle, alias)])
             else:
                 logger.info("Self alias changed to '%s'" % alias)
+                self.configfile.save_self_alias(alias)
                 self.AliasesChanged(((SunshineHandleFactory(self, 'self'), alias), ))
 
 #    # papyon.event.ContactEventInterface
@@ -104,7 +105,10 @@ class SunshineAliasing(telepathy.server.ConnectionInterfaceAliasing):
         """Get the alias from one handle id"""
         handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
         if handle == SunshineHandleFactory(self, 'self'):
-            alias = 'Ja'
+            alias = self.configfile.get_self_alias()
+            if alias == None and len(alias) == 0:
+                alias = handle.name
+                
         else:
             contact = handle.contact
             #print str(self.aliases)
@@ -113,6 +117,7 @@ class SunshineAliasing(telepathy.server.ConnectionInterfaceAliasing):
                 #del self.aliases[handle.name]
             elif contact is None:
                 alias = handle.name
+                self.configfile.save_self_alias(alias)
             else:
                 alias = contact.ShowName
                 if alias == '' or alias is None:

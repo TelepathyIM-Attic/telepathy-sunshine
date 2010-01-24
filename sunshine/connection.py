@@ -72,6 +72,7 @@ class SunshineConfig(object):
             main_xml.write(os.path.join(path, 'profile.xml'), encoding="UTF-8")
             
         self.path = os.path.join(path, 'profile.xml')
+        self.path2 = os.path.join(path, 'alias')
         return os.path.join(path, 'profile.xml')
 
     def get_contacts(self):
@@ -89,6 +90,18 @@ class SunshineConfig(object):
         self.contacts_count = len(config_xml.find('Contacts').getchildren())
 
         return self.roster
+
+    def get_self_alias(self):
+        if os.path.exists(self.path2):
+            file = open(self.path2, "r")
+            alias = file.read()
+            file.close()
+            return alias
+        
+    def save_self_alias(self, alias):
+        file = open(self.path2, "w")
+        file.write(alias)
+        file.close()
 
     def make_contacts_file(self, groups, contacts):
         contactbook_xml = ET.Element("ContactBook")
@@ -223,7 +236,6 @@ class SunshineConnection(telepathy.server.Connection,
             telepathy.server.Connection.__init__(self, 'gadugadu', account, 'sunshine')
             telepathy.server.ConnectionInterfaceRequests.__init__(self)
             SunshinePresence.__init__(self)
-
             SunshineAvatars.__init__(self)
             SunshineCapabilities.__init__(self)
             SunshineContacts.__init__(self)
@@ -500,7 +512,7 @@ class SunshineConnection(telepathy.server.Connection,
     #    logger.info("Status noticies received.")
 
     def on_loginFailed(self):
-        logger.info("Method on_loginFailed called.")
+        logger.info("Login failed.")
         self._status = telepathy.CONNECTION_STATUS_DISCONNECTED
         self.StatusChanged(telepathy.CONNECTION_STATUS_DISCONNECTED,
                 telepathy.CONNECTION_STATUS_REASON_AUTHENTICATION_FAILED)

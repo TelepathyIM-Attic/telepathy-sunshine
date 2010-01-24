@@ -122,7 +122,7 @@ class GaduClient(Protocol):
 
     def _handleLoginFailedPacket(self, msg):
         print 'Server sent - login failed'
-        self.loginSuccess.errback(None)
+        self.loginSuccess.errback(msg)
 
     def _handleStatusUpdatePacket(self, msg):
         self.user_profile._updateContact(msg.contact)

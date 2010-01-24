@@ -511,8 +511,8 @@ class SunshineConnection(telepathy.server.Connection,
     #def on_StatusNoticiesRecv(self):
     #    logger.info("Status noticies received.")
 
-    def on_loginFailed(self):
-        logger.info("Login failed.")
+    def on_loginFailed(self, response):
+        logger.info("Login failed: ", response)
         self._status = telepathy.CONNECTION_STATUS_DISCONNECTED
         self.StatusChanged(telepathy.CONNECTION_STATUS_DISCONNECTED,
                 telepathy.CONNECTION_STATUS_REASON_AUTHENTICATION_FAILED)

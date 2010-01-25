@@ -54,12 +54,9 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
             if handle == self.GetSelfHandle():
                 #tutaj kiedys trzeba napisac kod odp za naszego avatara
                 contact = None
-                av_token = handle.name
-                result[handle] = av_token
-                #pass
+                result[handle] = handle.name
             else:
                 contact = handle.contact
-
 
                 if contact is not None:
                     av_token = str(handle.name)
@@ -75,18 +72,11 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
     def RequestAvatars(self, contacts):
         for handle_id in contacts:
             handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
-            if handle == self.GetSelfHandle():
-                url = 'http://api.gadu-gadu.pl/avatars/%s/0.xml' % (str(handle.name))
-                d = getPage(url, timeout=10)
-                d.addCallback(self.on_fetch_avatars_file_ok, url, handle_id)
-                d.addErrback(self.on_fetch_avatars_file_failed, url, handle_id)
-            else:
-                contact = handle.contact
-                if contact is not None:
-                    url = 'http://api.gadu-gadu.pl/avatars/%s/0.xml' % (str(contact.uin))
-                    d = getPage(url, timeout=10)
-                    d.addCallback(self.on_fetch_avatars_file_ok, url, handle_id)
-                    d.addErrback(self.on_fetch_avatars_file_failed, url, handle_id)
+            
+            url = 'http://api.gadu-gadu.pl/avatars/%s/0.xml' % (str(handle.name))
+            d = getPage(url, timeout=10)
+            d.addCallback(self.on_fetch_avatars_file_ok, url, handle_id)
+            d.addErrback(self.on_fetch_avatars_file_failed, url, handle_id)
                         
     def SetAvatar(self, avatar, mime_type):
         pass
@@ -114,11 +104,12 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
             if result:
                 logger.info("Avatar file retrieved from %s" % (url))
                 e = minidom.parseString(result)
-                data = e.getElementsByTagName('bigAvatar')[0].firstChild.data
-
-                d = getPage(str(data), timeout=20)
-                d.addCallback(self.on_fetch_avatars_ok, data, handle_id)
-                d.addErrback(self.on_fetch_avatars_failed, data, handle_id)
+                if e.getElementsByTagName('avatar')[0].attributes["blank"].value != '1':
+                    data = e.getElementsByTagName('bigAvatar')[0].firstChild.data
+    
+                    d = getPage(str(data), timeout=20)
+                    d.addCallback(self.on_fetch_avatars_ok, data, handle_id)
+                    d.addErrback(self.on_fetch_avatars_failed, data, handle_id)
         except:
             logger.info("Avatar file can't be retrieved from %s" % (url))
 
@@ -141,37 +132,3 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
 
     def on_fetch_avatars_failed(self, error, url, handle_id):
         logger.debug("Avatar not retrieved, error: %s" % (error.getErrorMessage()))
-#
-#    # papyon.event.ContactEventInterface
-#    def on_contact_msn_object_changed(self, contact):
-#        if contact.msn_object is not None:
-#            avatar_token = contact.msn_object._data_sha.encode("hex")
-#        else:
-#            avatar_token = ""
-#        handle = ButterflyHandleFactory(self, 'contact',
-#                contact.account, contact.network_id)
-#        self.AvatarUpdated(handle, avatar_token)
-#
-#    # papyon.event.ProfileEventInterface
-#    def on_profile_msn_object_changed(self):
-#        msn_object = self.msn_client.profile.msn_object
-#        if msn_object is not None:
-#            avatar_token = msn_object._data_sha.encode("hex")
-#            logger.info("Self avatar changed to %s" % avatar_token)
-#            handle = ButterflyHandleFactory(self, 'self')
-#            self.AvatarUpdated(handle, avatar_token)
-#
-#    @async
-#    def _msn_object_retrieved(self, msn_object, handle):
-#        if msn_object is not None and msn_object._data is not None:
-#            logger.info("Avatar retrieved %s" % msn_object._data_sha.encode("hex"))
-#            msn_object._data.seek(0, 0)
-#            avatar = msn_object._data.read()
-#            msn_object._data.seek(0, 0)
-#            type = imghdr.what('', avatar)
-#            if type is None: type = 'jpeg'
-#            avatar = dbus.ByteArray(avatar)
-#            token = msn_object._data_sha.encode("hex")
-#            self.AvatarRetrieved(handle, token, avatar, 'image/' + type)
-#        else:
-#            logger.info("Avatar retrieved but NULL")

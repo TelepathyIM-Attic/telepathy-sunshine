@@ -535,7 +535,11 @@ class SunshineConnection(telepathy.server.Connection,
             handle = SunshineHandleFactory(self, 'contact',
                     str(msg.sender), None)
                 
-        timestamp = int(time.time())
+                
+        if int(msg.content.klass) == 9:
+            timestamp = int(msg.time)
+        else:
+            timestamp = int(time.time())
         type = telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL
         logger.info("User %s sent a message" % handle.name)
 

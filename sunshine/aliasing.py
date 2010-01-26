@@ -106,7 +106,7 @@ class SunshineAliasing(telepathy.server.ConnectionInterfaceAliasing):
         handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
         if handle == SunshineHandleFactory(self, 'self'):
             alias = self.configfile.get_self_alias()
-            if alias == None and len(alias) == 0:
+            if alias == None or len(alias) == 0:
                 alias = handle.name
                 
         else:

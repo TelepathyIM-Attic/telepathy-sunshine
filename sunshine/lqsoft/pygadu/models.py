@@ -76,6 +76,14 @@ class GaduProfile(object):
         if self.connected:
             self.setNotifyState(contact.uin, contact.notify_flags)
 
+    def removeContact(self, contact, notify=False):
+        if self.__contacts.has_key(contact.uin):
+            if self.connected:
+                del self.__contacts[contact.uin]
+                
+                if notify == True:
+                    self.__connection.delContact(contact)
+
     def notifyAboutContact(self, contact):
         """Notify GG server when new GG contact is added to the contacts list."""
         self.__connection.addNewContact(contact)

@@ -102,7 +102,7 @@ class AddNoticePacket(GaduPacket):
     contact        = complex.StructField(0, struct=StructNotice)
 
 @outpacket(0x0e)
-class RemoveNoticePacker(GaduPacket):
+class RemoveNoticePacket(GaduPacket):
     contact        = complex.StructField(0, struct=StructNotice)
 
 @outpacket(0x08)

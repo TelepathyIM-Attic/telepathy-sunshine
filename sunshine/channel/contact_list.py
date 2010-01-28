@@ -236,7 +236,11 @@ class SunshineSubscribeListChannel(SunshineListChannel):
 
     def RemoveMembers(self, contacts, message):
         for h in contacts:
-            self._remove(h)
+	    handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, h)
+	    contact = handle.contact
+	    self._conn_ref().gadu_client.removeContact(contact, notify=True)
+            self.MembersChanged('', (), [handle], (), (), 0,
+                    telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
 
     def _filter_contact(self, contact):
         return (True, False, False)

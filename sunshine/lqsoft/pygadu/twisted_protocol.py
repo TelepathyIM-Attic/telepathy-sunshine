@@ -202,6 +202,14 @@ class GaduClient(Protocol):
                 StructNotice(uin=contact.uin)) )
         self._log("New contact %s added." % contact.uin)
         return self
+    
+    def delContact(self, contact):
+        add_class = Resolver.by_name('RemoveNoticePacket')
+
+        self._sendPacket( add_class(contact= \
+                StructNotice(uin=contact.uin)) )
+        self._log("Contact %s removed." % contact.uin)
+        return self
 
     def changeStatus(self, status, desc=''):
         change_status_class = Resolver.by_name('ChangeStatusPacket')

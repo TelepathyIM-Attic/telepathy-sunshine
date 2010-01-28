@@ -53,14 +53,18 @@ class SunshineAliasing(telepathy.server.ConnectionInterfaceAliasing):
     def SetAliases(self, aliases):
         for handle_id, alias in aliases.iteritems():
             handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
-            if handle != SunshineHandleFactory(self, 'self'):
+            if handle == SunshineHandleFactory(self, 'self'):
+                logger.info("Self alias changed to '%s'" % alias)
+                self.configfile.save_self_alias(alias)
+                self.AliasesChanged(((SunshineHandleFactory(self, 'self'), alias), ))
+            else:
                 logger.debug("Called SetAliases for handle: %s, alias: %s" % (handle.name, alias))
-
+                
                 if alias == handle.name:
                     alias = ''
-
+                
                 new_alias = alias
-
+                
                 try:
                     handle.contact.updateName(new_alias)
                 except:
@@ -70,10 +74,6 @@ class SunshineAliasing(telepathy.server.ConnectionInterfaceAliasing):
                 logger.info("Contact %s alias changed to '%s'" % (unicode(handle.name), alias))
                 self.aliases[handle.name] = alias
                 self.AliasesChanged([(handle, alias)])
-            else:
-                logger.info("Self alias changed to '%s'" % alias)
-                self.configfile.save_self_alias(alias)
-                self.AliasesChanged(((SunshineHandleFactory(self, 'self'), alias), ))
 
 #    # papyon.event.ContactEventInterface
 #    def on_contact_display_name_changed(self, contact):
@@ -105,11 +105,13 @@ class SunshineAliasing(telepathy.server.ConnectionInterfaceAliasing):
         """Get the alias from one handle id"""
         handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
         if handle == SunshineHandleFactory(self, 'self'):
+            logger.info("SunshineHandleFactory for self handle '%s', id: %s" % (handle.name, handle.id))
             alias = self.configfile.get_self_alias()
+            self.configfile.save_self_alias(alias)
             if alias == None or len(alias) == 0:
                 alias = handle.name
-                
         else:
+            logger.info("SunshineHandleFactory handle '%s', id: %s" % (handle.name, handle.id))
             contact = handle.contact
             #print str(self.aliases)
             if self.aliases.has_key(handle.name):
@@ -117,7 +119,6 @@ class SunshineAliasing(telepathy.server.ConnectionInterfaceAliasing):
                 #del self.aliases[handle.name]
             elif contact is None:
                 alias = handle.name
-                self.configfile.save_self_alias(alias)
             else:
                 alias = contact.ShowName
                 if alias == '' or alias is None:

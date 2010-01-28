@@ -279,7 +279,6 @@ class SunshineConnection(telepathy.server.Connection,
         Returns:
         handle_id -- ID for the given username
         """
-
         handle_id = 0
         for handle in self._handles.values():
             if handle.get_name() == name:
@@ -534,22 +533,21 @@ class SunshineConnection(telepathy.server.Connection,
         else:
             handle = SunshineHandleFactory(self, 'contact',
                     str(msg.sender), None)
-                
-                
+            
         if int(msg.content.klass) == 9:
             timestamp = int(msg.time)
         else:
             timestamp = int(time.time())
         type = telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL
         logger.info("User %s sent a message" % handle.name)
-
+        
         logger.info("Msg from %r %d %d [%r] [%r]" % (msg.sender, msg.content.offset_plain, msg.content.offset_attrs, msg.content.plain_message, msg.content.html_message))
-
+        
         props = self._generate_props(telepathy.CHANNEL_TYPE_TEXT,
                 handle, False)
         channel = self._channel_manager.channel_for_props(props,
                 signal=True, conversation=None)
-        message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').decode('windows-1250').encode('utf-8'))
+        message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').replace('\r', '').decode('windows-1250').encode('utf-8'))
         #print 'message: ', message
         channel.Received(self._recv_id, timestamp, handle, type, 0, message)
         self._recv_id += 1

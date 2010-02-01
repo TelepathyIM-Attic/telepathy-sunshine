@@ -310,12 +310,18 @@ class SunshineConnection(telepathy.server.Connection,
         logger.info("Method RequestHandles called, handle type: %s, names: %s" % (str(handle_type), str(names)))
         self.check_connected()
         self.check_handle_type(handle_type)
-
+        
         handles = []
         for name in names:
             if handle_type == telepathy.HANDLE_TYPE_CONTACT:
                 contact_name = name
-
+                    
+                    
+                try:
+                    int(str(contact_name))
+                except:
+                    raise InvalidHandle
+                
                 handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT, str(contact_name))
 
                 if handle_id != 0:

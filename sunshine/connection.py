@@ -91,18 +91,6 @@ class SunshineConfig(object):
 
         return self.roster
 
-    def get_self_alias(self):
-        if os.path.exists(self.path2):
-            file = open(self.path2, "r")
-            alias = file.read()
-            file.close()
-            return alias
-        
-    def save_self_alias(self, alias):
-        file = open(self.path2, "w")
-        file.write(alias)
-        file.close()
-
     def make_contacts_file(self, groups, contacts):
         contactbook_xml = ET.Element("ContactBook")
 
@@ -135,6 +123,19 @@ class SunshineConfig(object):
     def get_contacts_count(self):
         return self.contacts_count
 
+    # alias config
+    def get_self_alias(self):
+        if os.path.exists(self.path2):
+            file = open(self.path2, "r")
+            alias = file.read()
+            file.close()
+            return alias
+        
+    def save_self_alias(self, alias):
+        file = open(self.path2, "w")
+        file.write(alias)
+        file.close()
+        
 #class GaduClientFactory(protocol.ClientFactory, protocol.ReconnectingClientFactory):
 class GaduClientFactory(protocol.ClientFactory):
     def __init__(self, config):
@@ -202,6 +203,8 @@ class SunshineConnection(telepathy.server.Connection,
             self.profile.onContactStatusChange = self.on_updateContact
             self.profile.onMessageReceived = self.on_messageReceived
             #self.profile.onStatusNoticiesRecv = self.on_StatusNoticiesRecv
+
+            self.password = str(parameters['password'])
 
             #lets try to make file with contacts etc ^^
             self.configfile = SunshineConfig(int(parameters['account']))
@@ -424,7 +427,7 @@ class SunshineConnection(telepathy.server.Connection,
     def updateContactsFile(self):
         """Method that updates contact file when it changes and in loop every 5 seconds."""
         self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
-        reactor.callLater(5, self.updateContactsFile)
+        reactor.callLater(50, self.updateContactsFile)
 
     @async
     def makeTelepathyContactsChannel(self):
@@ -477,7 +480,7 @@ class SunshineConnection(telepathy.server.Connection,
         logger.info("No contacts in the XML contacts file yet. Contacts imported.")
 
         self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
-        reactor.callLater(5, self.updateContactsFile)
+        reactor.callLater(50, self.updateContactsFile)
 
         self.makeTelepathyContactsChannel()
         self.makeTelepathyGroupChannels()
@@ -496,7 +499,7 @@ class SunshineConnection(telepathy.server.Connection,
             self.profile.importContacts(self.on_contactsImported)
         else:
             self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
-            reactor.callLater(5, self.updateContactsFile)
+            reactor.callLater(50, self.updateContactsFile)
 
             self.makeTelepathyContactsChannel()
             self.makeTelepathyGroupChannels()
@@ -551,106 +554,3 @@ class SunshineConnection(telepathy.server.Connection,
         #print 'message: ', message
         channel.Received(self._recv_id, timestamp, handle, type, 0, message)
         self._recv_id += 1
-
-
-    # papyon.event.ClientEventInterface
-    def on_client_state_changed(self, state):
-        if state == papyon.event.ClientState.CONNECTING:
-            self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTING,
-                    telepathy.CONNECTION_STATUS_REASON_REQUESTED)
-        elif state == papyon.event.ClientState.SYNCHRONIZED:
-            handle = ButterflyHandleFactory(self, 'list', 'subscribe')
-#            props = self._generate_props(telepathy.CHANNEL_TYPE_CONTACT_LIST,
-#                handle, False)
-#            self._channel_manager.channel_for_props(props, signal=True)
-#
-#            handle = ButterflyHandleFactory(self, 'list', 'publish')
-#            props = self._generate_props(telepathy.CHANNEL_TYPE_CONTACT_LIST,
-#                handle, False)
-#            self._channel_manager.channel_for_props(props, signal=True)
-
-            #handle = ButterflyHandleFactory(self, 'list', 'hide')
-            #props = self._generate_props(telepathy.CHANNEL_TYPE_CONTACT_LIST,
-            #    handle, False)
-            #self._channel_manager.channel_for_props(props, signal=True)
-
-            #handle = ButterflyHandleFactory(self, 'list', 'allow')
-            #props = self._generate_propstelepathy.CHANNEL_TYPE_CONTACT_LIST,
-            #    handle, False)
-            #self._channel_manager.channel_for_props(props, signal=True)
-
-            #handle = ButterflyHandleFactory(self, 'list', 'deny')
-            #props = self._generate_props(telepathy.CHANNEL_TYPE_CONTACT_LIST,
-            #    handle, False)
-            #self._channel_manager.channel_for_props(props, signal=True)
-
-            for group in self.msn_client.address_book.groups:
-                handle = ButterflyHandleFactory(self, 'group',
-                        group.name.decode("utf-8"))
-                props = self._generate_props(
-                    telepathy.CHANNEL_TYPE_CONTACT_LIST, handle, False)
-                self._channel_manager.channel_for_props(props, signal=True)
-        elif state == papyon.event.ClientState.OPEN:
-            self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
-                    telepathy.CONNECTION_STATUS_REASON_REQUESTED)
-            presence = self._initial_presence
-            message = self._initial_personal_message
-            if presence is not None:
-                self._client.profile.presence = presence
-            if message is not None:
-                self._client.profile.personal_message = message
-            self._client.profile.end_point_name = "PAPYON"
-
-            if (presence is not None) or (message is not None):
-                self._presence_changed(ButterflyHandleFactory(self, 'self'),
-                        self._client.profile.presence,
-                        self._client.profile.personal_message)
-        elif state == papyon.event.ClientState.CLOSED:
-            self.StatusChanged(telepathy.CONNECTION_STATUS_DISCONNECTED,
-                    self.__disconnect_reason)
-            #FIXME
-            self._channel_manager.close()
-            self._advertise_disconnected()
-
-    # papyon.event.ClientEventInterface
-    def on_client_error(self, type, error):
-        if type == papyon.event.ClientErrorType.NETWORK:
-            self.__disconnect_reason = telepathy.CONNECTION_STATUS_REASON_NETWORK_ERROR
-        elif type == papyon.event.ClientErrorType.AUTHENTICATION:
-            self.__disconnect_reason = telepathy.CONNECTION_STATUS_REASON_AUTHENTICATION_FAILED
-        elif type == papyon.event.ClientErrorType.PROTOCOL and \
-             error == papyon.event.ProtocolError.OTHER_CLIENT:
-            self.__disconnect_reason = telepathy.CONNECTION_STATUS_REASON_NAME_IN_USE
-        else:
-            self.__disconnect_reason = telepathy.CONNECTION_STATUS_REASON_NONE_SPECIFIED
-
-    # papyon.event.InviteEventInterface
-    def on_invite_conversation(self, conversation):
-        logger.debug("Conversation invite")
-        #FIXME: get rid of this crap and implement group support
-        participants = conversation.participants
-        for p in participants:
-            participant = p
-            break
-        handle = ButterflyHandleFactory(self, 'contact',
-                participant.account, participant.network_id)
-
-        props = self._generate_props(telepathy.CHANNEL_TYPE_TEXT,
-            handle, False, initiator_handle=handle)
-        channel = self._channel_manager.channel_for_props(props,
-            signal=True, conversation=conversation)
-
-    # papyon.event.InviteEventInterface
-    def on_invite_conference(self, call):
-        logger.debug("Call invite")
-        handle = ButterflyHandleFactory(self, 'contact', call.peer.account,
-                call.peer.network_id)
-
-        props = self._generate_props(telepathy.CHANNEL_TYPE_STREAMED_MEDIA,
-                handle, False, initiator_handle=handle)
-
-        channel = self._channel_manager.channel_for_props(props,
-                signal=True, call=call)
-
-    def _advertise_disconnected(self):
-        self._manager.disconnected(self)

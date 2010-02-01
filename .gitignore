@@ -76,3 +76,5 @@
 /sunshine/handle.pyc
 /sunshine/debug.pyc
 /sunshine/contacts.pyc
+/sunshine/lqsoft/gaduapi.pyc
+/sunshine/lqsoft/oauth.pyc

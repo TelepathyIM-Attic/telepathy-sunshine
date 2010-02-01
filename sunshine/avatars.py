@@ -21,6 +21,8 @@ import logging
 import imghdr
 import hashlib
 import dbus
+import StringIO
+from lqsoft.gaduapi import *
 
 import telepathy
 
@@ -45,7 +47,7 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
 
     def GetAvatarRequirements(self):
         mime_types = ("image/png","image/jpeg","image/gif")
-        return (mime_types, 96, 96, 192, 192, 500 * 1024)
+        return (mime_types, 0, 0, 0, 0, 0)
 
     def GetKnownAvatarTokens(self, contacts):
         result = {}
@@ -55,6 +57,7 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
                 #tutaj kiedys trzeba napisac kod odp za naszego avatara
                 contact = None
                 result[handle] = handle.name
+
             else:
                 contact = handle.contact
 
@@ -79,7 +82,14 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
             d.addErrback(self.on_fetch_avatars_file_failed, url, handle_id)
                         
     def SetAvatar(self, avatar, mime_type):
-        pass
+        if check_requirements() == True:
+            if not isinstance(avatar, str):
+                avatar = "".join([chr(b) for b in avatar])
+                data = StringIO.StringIO(avatar).getvalue()
+                gg = GG_Oauth(self.profile.uin, self.password)
+                ext = gg.getExtByType(mime_type)
+                gg.uploadAvatar(data, ext)
+        return str(self.profile.uin).encode("hex")
 #        self._avatar_known = True
 #        if not isinstance(avatar, str):
 #            avatar = "".join([chr(b) for b in avatar])

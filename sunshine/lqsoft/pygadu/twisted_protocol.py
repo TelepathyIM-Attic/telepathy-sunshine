@@ -33,7 +33,7 @@ class GaduClient(Protocol):
     def connectionMade(self):
         self.__buffer = ''        
         self.__chdr = None
-        # Nie trzeba tu nic robi�, bo to server pierwszy wysyła nam wiadomość
+        # Nie trzeba tu nic robic, bo to server pierwszy wysyła nam wiadomość
 
     def connectionLost(self, reason):
         if self.__pingThread:

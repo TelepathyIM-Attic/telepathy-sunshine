@@ -22,7 +22,7 @@ import imghdr
 import hashlib
 import dbus
 import StringIO
-from lqsoft.gaduapi import *
+from sunshine.lqsoft.gaduapi import *
 
 import telepathy
 

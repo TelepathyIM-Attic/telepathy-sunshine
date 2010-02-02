@@ -31,8 +31,9 @@ except ImportError:
 
 try:
     import oauth as oauth
+    test_oauth = oauth.OAuthSignatureMethod_HMAC_SHA1()
     oauth_loaded = True
-except ImportError:
+except:
     logger.info("oAuth module can't be loaded")
     oauth_loaded = False
 import json

@@ -29,6 +29,7 @@ from sunshine.lqsoft.pygadu.models import GaduProfile, GaduContact, GaduContactG
 
 from twisted.internet import reactor, protocol
 from twisted.web.client import getPage
+from twisted.internet import task
 from twisted.python import log
 
 import dbus
@@ -234,6 +235,7 @@ class SunshineConnection(telepathy.server.Connection,
             self._recv_id = 0
             self.pending_contacts_to_group = {}
             self._status = None
+            self.contactsLoop = None
 
             # Call parent initializers
             telepathy.server.Connection.__init__(self, 'gadugadu', account, 'sunshine')
@@ -242,7 +244,6 @@ class SunshineConnection(telepathy.server.Connection,
             SunshineAvatars.__init__(self)
             SunshineCapabilities.__init__(self)
             SunshineContacts.__init__(self)
-
 
             self.set_self_handle(SunshineHandleFactory(self, 'self'))
 
@@ -301,6 +302,9 @@ class SunshineConnection(telepathy.server.Connection,
             self.getServerAdress(self._account[0])
 
     def Disconnect(self):
+        if self.contactsLoop:
+            self.contactsLoop.stop()
+            self.contactsLoop = None
         logger.info("Disconnecting")
         self.StatusChanged(telepathy.CONNECTION_STATUS_DISCONNECTED,
                 telepathy.CONNECTION_STATUS_REASON_REQUESTED)
@@ -433,7 +437,7 @@ class SunshineConnection(telepathy.server.Connection,
     def updateContactsFile(self):
         """Method that updates contact file when it changes and in loop every 5 seconds."""
         self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
-        reactor.callLater(50, self.updateContactsFile)
+        #reactor.callLater(50, self.updateContactsFile)
 
     @async
     def makeTelepathyContactsChannel(self):
@@ -486,8 +490,10 @@ class SunshineConnection(telepathy.server.Connection,
         logger.info("No contacts in the XML contacts file yet. Contacts imported.")
 
         self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
-        reactor.callLater(50, self.updateContactsFile)
-
+        #reactor.callLater(50, self.updateContactsFile)
+        self.contactsLoop = task.LoopingCall(self.updateContactsFile)
+        self.contactsLoop.start(5.0)
+        
         self.makeTelepathyContactsChannel()
         self.makeTelepathyGroupChannels()
         
@@ -505,7 +511,9 @@ class SunshineConnection(telepathy.server.Connection,
             self.profile.importContacts(self.on_contactsImported)
         else:
             self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
-            reactor.callLater(50, self.updateContactsFile)
+            #reactor.callLater(50, self.updateContactsFile)
+            self.contactsLoop = task.LoopingCall(self.updateContactsFile)
+            self.contactsLoop.start(5.0)
 
             self.makeTelepathyContactsChannel()
             self.makeTelepathyGroupChannels()

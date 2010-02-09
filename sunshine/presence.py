@@ -309,7 +309,7 @@ class SunshinePresence(telepathy.server.ConnectionInterfacePresence,
         except KeyError:
             presence = SunshinePresenceMapping.from_gg_to_tp[0]
         presence_type = SunshinePresenceMapping.to_presence_type[presence]
-        personal_message = unicode(str(personal_message), "utf-8")
+        personal_message = unicode(str(personal_message), "utf-8").replace('\x00', '')
 
         self.PresencesChanged({handle: (presence_type, presence, personal_message)})
 

@@ -145,6 +145,12 @@ class GaduProfile(object):
 
         self.__connection.sendImportRequest(parse_xml)
 
+    def exportContacts(self, xml):
+        if not self.connected:
+            raise RuntimeError("You need to be connected, to export contacts.")
+        data = zlib.compress(xml)
+        self.__connection.exportContactsList(data)
+
     def _flushContacts(self):
         self.__contacts = {}
         self.__groups = {}

@@ -170,18 +170,19 @@ class SunshineConnection(telepathy.server.Connection,
         SunshineContacts
         ):
 
-
     _mandatory_parameters = {
             'account' : 's',
             'password' : 's'
             }
     _optional_parameters = {
             'server' : 's',
-            'port' : 'q'
+            'port' : 'q',
+            'export-contacts' : 'b'
             }
     _parameter_defaults = {
             'server' : '91.197.13.67',
-            'port' : 8074
+            'port' : 8074,
+            'export-contacts' : False
             }
 
     def __init__(self, manager, parameters):
@@ -194,6 +195,7 @@ class SunshineConnection(telepathy.server.Connection,
             self._manager = weakref.proxy(manager)
             self._account = (parameters['account'], parameters['password'])
             self._server = (parameters['server'], parameters['port'])
+            self._export_contacts = bool(parameters['export-contacts'])
 
             self.profile = GaduProfile(uin= int(parameters['account']) )
             self.profile.uin = int(parameters['account'])
@@ -297,14 +299,17 @@ class SunshineConnection(telepathy.server.Connection,
             self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTING,
                     telepathy.CONNECTION_STATUS_REASON_REQUESTED)
             self.__disconnect_reason = telepathy.CONNECTION_STATUS_REASON_NONE_SPECIFIED
-            #reactor.connectTCP('91.197.13.83', 8074, self.factory)
-            #reactor.connectTCP(self._server[0], self._server[1], self.factory)
             self.getServerAdress(self._account[0])
 
     def Disconnect(self):
         if self.contactsLoop:
             self.contactsLoop.stop()
             self.contactsLoop = None
+        if self._export_contacts == True:
+            if self.exportLoop:
+                self.exportLoop.stop()
+                self.exportLoop = None
+            
         logger.info("Disconnecting")
         self.StatusChanged(telepathy.CONNECTION_STATUS_DISCONNECTED,
                 telepathy.CONNECTION_STATUS_REASON_REQUESTED)
@@ -320,7 +325,6 @@ class SunshineConnection(telepathy.server.Connection,
             if handle_type == telepathy.HANDLE_TYPE_CONTACT:
                 contact_name = name
                     
-                    
                 try:
                     int(str(contact_name))
                 except:
@@ -333,45 +337,6 @@ class SunshineConnection(telepathy.server.Connection,
                 else:
                     handle = SunshineHandleFactory(self, 'contact',
                             str(contact_name), None)
-
-#                try:
-#                    #just check is contact_name is integer
-#                    stripped = str(int(contact_name))
-#                except:
-#                    if self.profile.isContactExist(contact_name) == False:
-#                        contact_pseudo_xmled = ET.fromstring("""<Contact><Guid>%s</Guid><GGNumber>%s</GGNumber><ShowName>%s</ShowName></Contact>""" % (str(contact_name), str(contact_name), str(contact_name)))
-#                        c = GaduContact.from_xml(contact_pseudo_xmled)
-#                        #self.profile.addContact( c )
-#                        self.profile.addNewContact( c )
-#                        self.profile.notifyAboutContact( c )
-                #if len(name) > 1:
-                #    network_id = int(name[1])
-                #else:
-                #    network_id = papyon.NetworkID.MSN
-                #contacts = self.msn_client.address_book.contacts.\
-                #        search_by_account(contact_name).\
-                #        search_by_network_id(network_id)
-                #
-                #if len(contacts) > 0:
-                #    contact = contacts[0]
-                #    handle = GaduHandleFactory(self, 'contact',
-                #            contact.account, contact.network_id)
-                #else:
-                #    handle = GaduHandleFactory(self, 'contact',
-                #            contact_name, network_id)
-                #print contact_name
-                #contact = self.profile.get_contact(int(contact_name))
-                #print str(contact)
-
-
-
-                
-
-#                    print "contact name: %s" % (contact_name)
-#                    handle = GaduHandleFactory(self, 'contact',
-#                                str(contact_name), None)
-#
-#
                 
             elif handle_type == telepathy.HANDLE_TYPE_LIST:
                 handle = SunshineHandleFactory(self, 'list', name)
@@ -415,29 +380,18 @@ class SunshineConnection(telepathy.server.Connection,
         _success(channel._object_path)
         self.signal_new_channels([channel])
 
-
-    def get_handle_id_by_name(self, handle_type, name):
-        """Returns a handle ID for the given type and name
-
-        Arguments:
-        handle_type -- Telepathy Handle_Type for all the handles
-        name -- username for the contact
-
-        Returns:
-        handle_id -- ID for the given username
-        """
-        handle_id = 0
-        for handle in self._handles.values():
-            if handle.get_name() == name:
-                handle_id = handle.get_id()
-                break
-
-        return handle_id
-
+    @async
     def updateContactsFile(self):
         """Method that updates contact file when it changes and in loop every 5 seconds."""
         self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
-        #reactor.callLater(50, self.updateContactsFile)
+
+    @async
+    def exportContactsFile(self):
+        file = open(self.configfile.path, "r")
+        contacts_xml = file.read()
+        file.close()
+        if len(contacts_xml) != 0:
+            self.profile.exportContacts(contacts_xml)
 
     @async
     def makeTelepathyContactsChannel(self):
@@ -446,11 +400,6 @@ class SunshineConnection(telepathy.server.Connection,
         props = self._generate_props(telepathy.CHANNEL_TYPE_CONTACT_LIST,
             handle, False)
         self._channel_manager.channel_for_props(props, signal=True)
-
-#        handle = ButterflyHandleFactory(self, 'list', 'publish')
-#        props = self._generate_props(telepathy.CHANNEL_TYPE_CONTACT_LIST,
-#            handle, False)
-#        self._channel_manager.channel_for_props(props, signal=True)
 
     @async
     def makeTelepathyGroupChannels(self):
@@ -490,10 +439,13 @@ class SunshineConnection(telepathy.server.Connection,
         logger.info("No contacts in the XML contacts file yet. Contacts imported.")
 
         self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
-        #reactor.callLater(50, self.updateContactsFile)
         self.contactsLoop = task.LoopingCall(self.updateContactsFile)
         self.contactsLoop.start(5.0)
-        
+
+        if self._export_contacts == True:
+            self.exportLoop = task.LoopingCall(self.exportContactsFile)
+            self.exportLoop.start(30.0)
+
         self.makeTelepathyContactsChannel()
         self.makeTelepathyGroupChannels()
         
@@ -511,9 +463,12 @@ class SunshineConnection(telepathy.server.Connection,
             self.profile.importContacts(self.on_contactsImported)
         else:
             self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
-            #reactor.callLater(50, self.updateContactsFile)
             self.contactsLoop = task.LoopingCall(self.updateContactsFile)
             self.contactsLoop.start(5.0)
+            
+            if self._export_contacts == True:
+                self.exportLoop = task.LoopingCall(self.exportContactsFile)
+                self.exportLoop.start(30.0)
 
             self.makeTelepathyContactsChannel()
             self.makeTelepathyGroupChannels()
@@ -523,9 +478,6 @@ class SunshineConnection(telepathy.server.Connection,
             self._status = telepathy.CONNECTION_STATUS_CONNECTED
             self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
                     telepathy.CONNECTION_STATUS_REASON_REQUESTED)
-
-    #def on_StatusNoticiesRecv(self):
-    #    logger.info("Status noticies received.")
 
     def on_loginFailed(self, response):
         logger.info("Login failed: ", response)

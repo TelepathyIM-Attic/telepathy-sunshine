@@ -8,5 +8,7 @@ param-account = s required
 param-password = s required
 param-server = s
 param-port = q
+param-export-contacts = b
 default-server = 91.197.13.67
 default-port = 8074
+default-export-contacts = false

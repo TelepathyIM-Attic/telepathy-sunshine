@@ -103,8 +103,8 @@ class SunshineConfig(object):
             group_xml = ET.SubElement(groups_xml, "Group")
             ET.SubElement(group_xml, "Id").text = group.Id
             ET.SubElement(group_xml, "Name").text = group.Name
-            ET.SubElement(group_xml, "IsExpanded").text = str(group.IsExpanded)
-            ET.SubElement(group_xml, "IsRemovable").text = str(group.IsRemovable)
+            ET.SubElement(group_xml, "IsExpanded").text = str(group.IsExpanded).lower()
+            ET.SubElement(group_xml, "IsRemovable").text = str(group.IsRemovable).lower()
 
         for contact in contacts:
             #Guid, GGNumber, ShowName. MobilePhone. HomePhone, Email, WWWAddress, FirstName, LastName, Gender, Birth, City, Province, Groups, CurrentAvatar, Avatars
@@ -117,6 +117,9 @@ class SunshineConfig(object):
             if contact.Groups:
                 for group in contact_groups.getchildren():
                     ET.SubElement(contact_groups_xml, "GroupId").text = group.text
+            contact_avatars_xml = ET.SubElement(contact_xml, "Avatars")
+            ET.SubElement(contact_avatars_xml, "URL").text = ""
+            ET.SubElement(contact_xml, "FlagNormal").text = "true"
 
         main_xml = ET.ElementTree(contactbook_xml)
         main_xml.write(self.path, encoding="UTF-8")
@@ -186,6 +189,7 @@ class SunshineConnection(telepathy.server.Connection,
             }
 
     def __init__(self, manager, parameters):
+        parameters['export-contacts'] = bool(parameters['export-contacts'])
         self.check_parameters(parameters)
 
         try:
@@ -387,6 +391,7 @@ class SunshineConnection(telepathy.server.Connection,
 
     @async
     def exportContactsFile(self):
+        logger.info("Exporting contacts.")
         file = open(self.configfile.path, "r")
         contacts_xml = file.read()
         file.close()

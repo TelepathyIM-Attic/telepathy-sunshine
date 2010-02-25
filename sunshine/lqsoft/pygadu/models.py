@@ -155,9 +155,6 @@ class GaduProfile(object):
         self.__contacts = {}
         self.__groups = {}
 
-    def exportContacts(self):
-        pass
-
     def disconnect(self):
         self.__connection.transport.loseConnection()
 

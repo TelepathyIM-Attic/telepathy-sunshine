@@ -80,6 +80,21 @@ class StructMessage(CStruct):
     attrs               = StructField(5, struct=StructMsgAttrs, offset='offset_attrs')
 
 #
+# GG_USER_DATA structures
+#
+class StructUserDataAttr(CStruct):
+    name_size 	= IntField(0)
+    name		= StringField(1, length='name_size')
+    type		= IntField(2)
+    value_size	= IntField(3)
+    value		= StringField(4, length='value_size')
+
+class StructUserDataUser(CStruct):
+    uin		= IntField(0)
+    num		= IntField(1)
+    attr		= ArrayField(2, length='num', subfield=StructField(0, struct=StructUserDataAttr))
+
+#
 # PACKETS
 #
 @outpacket(0x31)
@@ -90,14 +105,14 @@ class LoginPacket(GaduPacket):
     login_hash      = StringField(3, length=64)
     status          = UIntField(4, default=0x02)
     flags           = UIntField(5, default=0x03)
-    features        = UIntField(6, default=0x37)
+    features        = UIntField(6, default=0x00000367)
     local_ip        = IntField(7)
     local_port      = ShortField(8)
     external_ip     = IntField(9)
     external_port   = ShortField(10)
     image_size      = UByteField(11, default=0xff)
     unknown01       = UByteField(12, default=0x64)
-    version         = VarcharField(13, default="Gadu-Gadu Client Build 8.0.0.8731")
+    version         = VarcharField(13, default="Gadu-Gadu Client build 10.0.0.10450")
     description     = VarcharField(14)
 
     def update_hash(self, password, seed):
@@ -194,3 +209,23 @@ class ULReplyPacket(GaduPacket): # UserListReply80
     @property
     def is_final(self):
         return (self.type & 0x02)
+
+#
+# GG_XML_EVENT and GG_XML_ACTION packets
+#
+@inpacket(0x27)
+class XmlEventPacket(GaduPacket):
+    data    =   StringField(0, length=-1)
+
+@inpacket(0x2c)
+class XmlActionPacket(GaduPacket):
+    data    =   StringField(0, length=-1)
+
+#
+# GG_USER_DATA packets
+#
+@inpacket(0x44)
+class UserDataPacket(GaduPacket):
+    type		= IntField(0)
+    num		= IntField(1)
+    users		= ArrayField(2, length='num', subfield=StructField(0, struct=StructUserDataUser))

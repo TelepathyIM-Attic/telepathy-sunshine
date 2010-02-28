@@ -70,18 +70,18 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities):
 #        diff = (int(handle), ctype, old_gen, new_gen, old_spec, new_spec)
 #        self.CapabilitiesChanged([diff])
 #
-#    def _get_capabilities(self, contact):
-#        gen_caps = 0
-#        spec_caps = 0
-#
-#        caps = contact.client_capabilities
-#        if caps.supports_sip_invite:
-#            gen_caps |= telepathy.CONNECTION_CAPABILITY_FLAG_CREATE
-#            gen_caps |= telepathy.CONNECTION_CAPABILITY_FLAG_INVITE
-#            spec_caps |= telepathy.CHANNEL_MEDIA_CAPABILITY_AUDIO
-#            spec_caps |= telepathy.CHANNEL_MEDIA_CAPABILITY_NAT_TRAVERSAL_STUN
-#
-#            if caps.has_webcam:
-#                spec_caps |= telepathy.CHANNEL_MEDIA_CAPABILITY_VIDEO
-#
-#        return gen_caps, spec_caps
+    def _get_capabilities(self, contact):
+        gen_caps = 0
+        spec_caps = 0
+
+        caps = contact.client_capabilities
+        #if caps.supports_sip_invite:
+        #    gen_caps |= telepathy.CONNECTION_CAPABILITY_FLAG_CREATE
+        #    gen_caps |= telepathy.CONNECTION_CAPABILITY_FLAG_INVITE
+        #    spec_caps |= telepathy.CHANNEL_MEDIA_CAPABILITY_AUDIO
+        #    spec_caps |= telepathy.CHANNEL_MEDIA_CAPABILITY_NAT_TRAVERSAL_STUN
+        #
+        #    if caps.has_webcam:
+        #        spec_caps |= telepathy.CHANNEL_MEDIA_CAPABILITY_VIDEO
+
+        return gen_caps, spec_caps

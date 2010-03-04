@@ -227,5 +227,5 @@ class XmlActionPacket(GaduPacket):
 @inpacket(0x44)
 class UserDataPacket(GaduPacket):
     type		= IntField(0)
-    num		= IntField(1)
+    num                 = IntField(1)
     users		= ArrayField(2, length='num', subfield=StructField(0, struct=StructUserDataUser))

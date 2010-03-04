@@ -124,6 +124,12 @@ class GaduClient(Protocol):
         print 'Server sent - login failed'
         self.loginSuccess.errback(msg)
 
+    def _handleXmlEventPacket(self, data):
+        self.user_profile.onXml(data)
+        
+    def _handleXmlActionPacket(self, data):
+        self.user_profile.onXml(data)
+
     def _handleStatusUpdatePacket(self, msg):
         self.user_profile._updateContact(msg.contact)
         

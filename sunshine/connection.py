@@ -157,12 +157,28 @@ class GaduClientFactory(protocol.ClientFactory):
         logger.info('Lost connection.  Reason: %s' % (reason))
         #protocol.ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
         #connector.connect()
-        reactor.stop()
+        if self.config.contactsLoop:
+            self.config.contactsLoop.stop()
+            self.config.contactsLoop = None
+        if self.config._export_contacts == True:
+            if self.config.exportLoop:
+                self.config.exportLoop.stop()
+                self.config.exportLoop = None
+        if reactor.running:
+            reactor.stop()
 
     def clientConnectionFailed(self, connector, reason):
         logger.info('Connection failed. Reason: %s' % (reason))
         #protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
-        reactor.stop()
+        if self.config.contactsLoop:
+            self.config.contactsLoop.stop()
+            self.config.contactsLoop = None
+        if self.config._export_contacts == True:
+            if self.config.exportLoop:
+                self.config.exportLoop.stop()
+                self.config.exportLoop = None
+        if reactor.running:
+            reactor.stop()
 
 class SunshineConnection(telepathy.server.Connection,
         telepathy.server.ConnectionInterfaceRequests,
@@ -317,7 +333,8 @@ class SunshineConnection(telepathy.server.Connection,
         logger.info("Disconnecting")
         self.StatusChanged(telepathy.CONNECTION_STATUS_DISCONNECTED,
                 telepathy.CONNECTION_STATUS_REASON_REQUESTED)
-        reactor.stop()
+        if reactor.running:
+            reactor.stop()
 
     def RequestHandles(self, handle_type, names, sender):
         logger.info("Method RequestHandles called, handle type: %s, names: %s" % (str(handle_type), str(names)))

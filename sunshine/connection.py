@@ -205,7 +205,10 @@ class SunshineConnection(telepathy.server.Connection,
             }
 
     def __init__(self, manager, parameters):
-        parameters['export-contacts'] = bool(parameters['export-contacts'])
+        try:
+            parameters['export-contacts'] = bool(parameters['export-contacts'])
+        except KeyError:
+            parameters['export-contacts'] = False
         self.check_parameters(parameters)
 
         try:

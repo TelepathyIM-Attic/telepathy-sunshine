@@ -166,6 +166,7 @@ class SunshinePresence(telepathy.server.ConnectionInterfacePresence,
         logger.info("Setting Personal message to '%s'" % message)
 
         message = message.encode('UTF-8')
+        self._personal_message = message
 
         if self._status == telepathy.CONNECTION_STATUS_CONNECTED:
             self._self_presence_changed(SunshineHandleFactory(self, 'self'), presence, message)

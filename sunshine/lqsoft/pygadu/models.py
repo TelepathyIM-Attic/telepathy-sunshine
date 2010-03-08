@@ -16,6 +16,8 @@ class GaduProfile(object):
         self.__contacts = {}
         self.__groups = {}
         self.__connection = None
+        self.contactsLoop = None
+        self.exportLoop = None
         
     def __set_password(self, value):
         self.__hashelem = hashlib.new('sha1')

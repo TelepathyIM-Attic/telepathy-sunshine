@@ -70,6 +70,9 @@ class GaduProfile(object):
         """Is the profile currently used in an active connection"""
         return self.__connection is not None
 
+    def disconnect(self):
+        self.__connection.loseConnection()
+
     def addContact(self, contact):
         if self.__contacts.has_key(contact.uin):
             raise ValueError("Contact with UIN %d already exists." % contact.uin)

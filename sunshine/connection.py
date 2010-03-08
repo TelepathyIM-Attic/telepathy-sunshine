@@ -333,11 +333,12 @@ class SunshineConnection(telepathy.server.Connection,
                 self.profile.exportLoop = None
                 
         logger.info("Disconnecting")
-        self.profile.setMyState('NOT_AVAILABLE', self._personal_message)
+        #self.profile.setMyState('NOT_AVAILABLE', self._personal_message)
         self.StatusChanged(telepathy.CONNECTION_STATUS_DISCONNECTED,
                 telepathy.CONNECTION_STATUS_REASON_REQUESTED)
-        if reactor.running:
-            reactor.stop()
+        self.profile.disconnect()
+        #if reactor.running:
+        #    reactor.stop()
 
     def RequestHandles(self, handle_type, names, sender):
         logger.info("Method RequestHandles called, handle type: %s, names: %s" % (str(handle_type), str(names)))

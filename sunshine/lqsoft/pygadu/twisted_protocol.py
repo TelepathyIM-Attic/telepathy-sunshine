@@ -40,7 +40,7 @@ class GaduClient(Protocol):
             self.__pingThread.stop()
             self.__pingThread = None
 
-        Protocol.connectionLost(self, reason)      
+        Protocol.connectionLost(self, reason)
 
     def __pop_data(self, n):
         data, self.__buffer = self.__buffer[:n], self.__buffer[n:]

@@ -78,6 +78,56 @@ class SunshineTextChannel(telepathy.server.ChannelTypeText):
         return telepathy.server.ChannelTypeText.ListPendingMessages(self, clear)
 
 
+class SunshineRoomTextChannel(telepathy.server.ChannelTypeText, telepathy.server.ChannelInterfaceGroup):
+
+    def __init__(self, conn, manager, conversation, props):
+        _, surpress_handler, handle = manager._get_type_requested_handle(props)
+        self._recv_id = 0
+        self._conn_ref = weakref.ref(conn)
+        self.conn = conn
+
+        self.handle = handle
+        telepathy.server.ChannelTypeText.__init__(self, conn, manager, props)
+        telepathy.server.ChannelInterfaceGroup.__init__(self)
+
+        self.GroupFlagsChanged(telepathy.CHANNEL_GROUP_FLAG_CAN_ADD, 0)
+
+    def Send(self, message_type, text):
+        if message_type == telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL:
+            logger.info("Sending message to %s, id %s, body: '%s'" % (str(self.handle.name), str(self.handle.id), unicode(text)))
+            msg = text.encode('windows-1250')
+            self.conn.gadu_client.sendTo(int(self.handle.name), str(text), str(msg))
+        else:
+            raise telepathy.NotImplemented("Unhandled message type")
+        self.Sent(int(time.time()), message_type, text)
+
+    def Close(self):
+        telepathy.server.ChannelTypeText.Close(self)
+        self.remove_from_connection()
+
+    # Redefine GetSelfHandle since we use our own handle
+    #  as Butterfly doesn't have channel specific handles
+    def GetSelfHandle(self):
+        return self._conn.GetSelfHandle()
+
+    # Rededefine AcknowledgePendingMessages to remove offline messages
+    # from the oim box.
+    def AcknowledgePendingMessages(self, ids):
+        telepathy.server.ChannelTypeText.AcknowledgePendingMessages(self, ids)
+#        messages = []
+#        for id in ids:
+#            if id in self._pending_offline_messages.keys():
+#                messages.append(self._pending_offline_messages[id])
+#                del self._pending_offline_messages[id]
+#        self._oim_box_ref().delete_messages(messages)
+
+    # Rededefine ListPendingMessages to remove offline messages
+    # from the oim box.
+    def ListPendingMessages(self, clear):
+        return telepathy.server.ChannelTypeText.ListPendingMessages(self, clear)
+
+
+
 #        if clear:
 #            messages = self._pending_offline_messages.values()
 #            self._oim_box_ref().delete_messages(messages)

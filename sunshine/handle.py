@@ -30,6 +30,7 @@ logger = logging.getLogger('Sunshine.Handle')
 def SunshineHandleFactory(connection, type, *args):
     mapping = {'self': SunshineSelfHandle,
                'contact': SunshineContactHandle,
+               'room': SunshineRoomHandle,
                'list': SunshineListHandle,
                'group': SunshineGroupHandle}
     handle = mapping[type](connection, *args)
@@ -109,6 +110,12 @@ class SunshineContactHandle(SunshineHandle):
         result = self._connection.gadu_client.get_contact(int(self.account))
         return result
 
+class SunshineRoomHandle(SunshineHandle):
+    def __init__(self, connection, id, name):
+        handle_type = telepathy.HANDLE_TYPE_ROOM
+        handle_name = str(name)
+        self._connection = connection
+        SunshineHandle.__init__(self, connection, id, handle_type, handle_name)
 
 class SunshineListHandle(SunshineHandle):
     def __init__(self, connection, id, list_name):

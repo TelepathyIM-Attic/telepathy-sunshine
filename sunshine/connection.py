@@ -256,6 +256,7 @@ class SunshineConnection(telepathy.server.Connection,
             self._channel_manager = SunshineChannelManager(self)
 
             self._recv_id = 0
+            self._conf_id = 0
             self.pending_contacts_to_group = {}
             self._status = None
             self.profile.contactsLoop = None
@@ -309,7 +310,7 @@ class SunshineConnection(telepathy.server.Connection,
         """
         handle_id = 0
         for handle in self._handles.values():
-            if handle.get_name() == name:
+            if handle.get_name() == name and handle.type == handle_type:
                 handle_id = handle.get_id()
                 break
 
@@ -362,7 +363,8 @@ class SunshineConnection(telepathy.server.Connection,
                 else:
                     handle = SunshineHandleFactory(self, 'contact',
                             str(contact_name), None)
-                
+            elif handle_type == telepathy.HANDLE_TYPE_ROOM:
+                handle = SunshineHandleFactory(self, 'room', name)
             elif handle_type == telepathy.HANDLE_TYPE_LIST:
                 handle = SunshineHandleFactory(self, 'list', name)
             elif handle_type == telepathy.HANDLE_TYPE_GROUP:
@@ -519,30 +521,99 @@ class SunshineConnection(telepathy.server.Connection,
         logger.info("Method on_updateContact called, status changed for UIN: %s, id: %s, status: %s, description: %s" % (contact.uin, handle.id, contact.status, contact.get_desc()))
         self._presence_changed(handle, contact.status, contact.get_desc())
 
-    @async
+    #@async
     def on_messageReceived(self, msg):
-        handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT,
-                                  str(msg.sender))
-        if handle_id != 0:
-            handle = self.handle(telepathy.constants.HANDLE_TYPE_CONTACT, handle_id)
-        else:
-            handle = SunshineHandleFactory(self, 'contact',
-                    str(msg.sender), None)
+        if hasattr(msg.content.attrs, 'conference') and msg.content.attrs.conference != None:
+            recipients = msg.content.attrs.conference.recipients
+            #recipients.append(self.profile.uin)
+            print msg.sender
+            print 'recipients:', recipients
+            recipients = map(str, recipients)
+            recipients.append(str(msg.sender))
+            print 'recipients:', recipients
+            recipients = sorted(recipients)
+            conf_name = ', '.join(map(str, recipients))
+            print 'conf_name:', conf_name
+
+            #active handle for current writting contact
+            ahandle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT,
+                                              str(msg.sender))
+
+            if ahandle_id != 0:
+                ahandle = self.handle(telepathy.constants.HANDLE_TYPE_CONTACT, ahandle_id)
+            else:
+                ahandle = SunshineHandleFactory(self, 'contact',
+                        str(msg.sender), None)
+
+            #now we need to preapare a new room and make initial users in it
+            room_handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_ROOM, str(conf_name))
+            print 'room_handle_id:', room_handle_id
+
+            handles = []
             
-        if int(msg.content.klass) == 9:
-            timestamp = int(msg.time)
+            if room_handle_id == 0:
+                room_handle =  SunshineHandleFactory(self, 'room', str(conf_name))
+
+                for number in recipients:
+                    handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT,
+                                              number)
+                    if handle_id != 0:
+                        handle = self.handle(telepathy.constants.HANDLE_TYPE_CONTACT, handle_id)
+                    else:
+                        handle = SunshineHandleFactory(self, 'contact',
+                                number, None)
+
+                    handles.append(handle)
+            else:
+                room_handle = self.handle(telepathy.constants.HANDLE_TYPE_ROOM, room_handle_id)
+
+            props = self._generate_props(telepathy.CHANNEL_TYPE_TEXT,
+                    room_handle, False)
+            channel = self._channel_manager.channel_for_props(props,
+                    signal=True, conversation=None)
+
+            if handles:
+                print handles
+                channel.MembersChanged('', handles, [], [], [],
+                        0, telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
+
+            if int(msg.content.klass) == 9:
+                timestamp = int(msg.time)
+            else:
+                timestamp = int(time.time())
+            type = telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL
+            logger.info("User %s sent a message" % ahandle.name)
+
+            logger.info("Msg from %r %d %d [%r] [%r]" % (msg.sender, msg.content.offset_plain, msg.content.offset_attrs, msg.content.plain_message, msg.content.html_message))
+
+            message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').replace('\r', '').decode('windows-1250').encode('utf-8'))
+            #print 'message: ', message
+            channel.Received(self._recv_id, timestamp, ahandle, type, 0, message)
+            self._recv_id += 1
+
         else:
-            timestamp = int(time.time())
-        type = telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL
-        logger.info("User %s sent a message" % handle.name)
-        
-        logger.info("Msg from %r %d %d [%r] [%r]" % (msg.sender, msg.content.offset_plain, msg.content.offset_attrs, msg.content.plain_message, msg.content.html_message))
-        
-        props = self._generate_props(telepathy.CHANNEL_TYPE_TEXT,
-                handle, False)
-        channel = self._channel_manager.channel_for_props(props,
-                signal=True, conversation=None)
-        message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').replace('\r', '').decode('windows-1250').encode('utf-8'))
-        #print 'message: ', message
-        channel.Received(self._recv_id, timestamp, handle, type, 0, message)
-        self._recv_id += 1
+            handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT,
+                                      str(msg.sender))
+            if handle_id != 0:
+                handle = self.handle(telepathy.constants.HANDLE_TYPE_CONTACT, handle_id)
+            else:
+                handle = SunshineHandleFactory(self, 'contact',
+                        str(msg.sender), None)
+
+            if int(msg.content.klass) == 9:
+                timestamp = int(msg.time)
+            else:
+                timestamp = int(time.time())
+            type = telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL
+            logger.info("User %s sent a message" % handle.name)
+
+            logger.info("Msg from %r %d %d [%r] [%r]" % (msg.sender, msg.content.offset_plain, msg.content.offset_attrs, msg.content.plain_message, msg.content.html_message))
+
+            props = self._generate_props(telepathy.CHANNEL_TYPE_TEXT,
+                    handle, False)
+            channel = self._channel_manager.channel_for_props(props,
+                    signal=True, conversation=None)
+            message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').replace('\r', '').decode('windows-1250').encode('utf-8'))
+            #print 'message: ', message
+            channel.Received(self._recv_id, timestamp, handle, type, 0, message)
+            self._recv_id += 1

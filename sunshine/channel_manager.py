@@ -25,7 +25,7 @@ import telepathy
 
 from sunshine.channel.contact_list import SunshineContactListChannelFactory
 from sunshine.channel.group import SunshineGroupChannel
-from sunshine.channel.text import SunshineTextChannel
+from sunshine.channel.text import SunshineTextChannel, SunshineRoomTextChannel
 #from sunshine.channel.media import SunshineMediaChannel
 from sunshine.handle import SunshineHandleFactory
 
@@ -39,6 +39,11 @@ class SunshineChannelManager(telepathy.server.ChannelManager):
 
         fixed = {telepathy.CHANNEL_INTERFACE + '.ChannelType': telepathy.CHANNEL_TYPE_TEXT,
             telepathy.CHANNEL_INTERFACE + '.TargetHandleType': dbus.UInt32(telepathy.HANDLE_TYPE_CONTACT)}
+        self._implement_channel_class(telepathy.CHANNEL_TYPE_TEXT,
+            self._get_text_channel, fixed, [])
+
+        fixed = {telepathy.CHANNEL_INTERFACE + '.ChannelType': telepathy.CHANNEL_TYPE_TEXT,
+            telepathy.CHANNEL_INTERFACE + '.TargetHandleType': dbus.UInt32(telepathy.HANDLE_TYPE_ROOM)}
         self._implement_channel_class(telepathy.CHANNEL_TYPE_TEXT,
             self._get_text_channel, fixed, [])
 
@@ -66,13 +71,19 @@ class SunshineChannelManager(telepathy.server.ChannelManager):
     def _get_text_channel(self, props, conversation=None):
         _, surpress_handler, handle = self._get_type_requested_handle(props)
 
-        if handle.get_type() != telepathy.HANDLE_TYPE_CONTACT:
-            raise telepathy.NotImplemented('Only contacts are allowed')
+        if handle.get_type() == telepathy.HANDLE_TYPE_CONTACT:
+            logger.debug('New text channel for contact handle, name: %s, id: %s, type: %s' % (handle.name, handle.id, handle.type))
 
-        logger.debug('New text channel for handle, name: %s, id: %s, type: %s' % (handle.name, handle.id, handle.type))
+            channel = SunshineTextChannel(self._conn, self, conversation, props)
+            return channel
+        elif handle.get_type() == telepathy.HANDLE_TYPE_ROOM:
+            logger.debug('New text channel for room handle, name: %s, id: %s, type: %s' % (handle.name, handle.id, handle.type))
 
-        channel = SunshineTextChannel(self._conn, self, conversation, props)
-        return channel
+            channel = SunshineRoomTextChannel(self._conn, self, conversation, props)
+            return channel
+        else:
+            raise telepathy.NotImplemented('Unknown handle for text channel.')
+
 
 #    def _get_media_channel(self, props, call=None):
 #        _, surpress_handler, handle = self._get_type_requested_handle(props)

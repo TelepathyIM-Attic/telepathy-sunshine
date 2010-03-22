@@ -203,6 +203,24 @@ class GaduClient(Protocol):
 
         self._sendPacket( klass( recipient=rcpt, seq=int(time.time()), content=payload) )
 
+    def sendConfMessage(self, rcpt, html_text, plain_message, contacts):
+        klass = Resolver.by_name('MessageOutPacket')
+
+        attrs = StructMsgAttrs()
+        attrs.richtext = StructRichText()
+
+        #contacts_len = len(contacts)
+        contacts = map(int, contacts)
+        konference = StructConference(recipients=contacts)
+
+        attrs.conference = konference
+
+        payload = StructMessage(klass=StructMessage.CLASS.CHAT, \
+            html_message=html_text, plain_message=plain_message, \
+            attrs = attrs)
+
+        self._sendPacket( klass( recipient=rcpt, seq=int(time.time()), content=payload) )
+
     def sendImportRequest(self, callback):
         if self.importrq_cb is not None:
             raise RuntimeError("There can be only one import request pending.")

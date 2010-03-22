@@ -569,13 +569,16 @@ class SunshineConnection(telepathy.server.Connection,
 
             props = self._generate_props(telepathy.CHANNEL_TYPE_TEXT,
                     room_handle, False)
-            channel = self._channel_manager.channel_for_props(props,
-                    signal=True, conversation=None)
 
             if handles:
-                print handles
+                #print handles
+                channel = self._channel_manager.channel_for_props(props,
+                        signal=True, conversation=handles)
                 channel.MembersChanged('', handles, [], [], [],
                         0, telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
+            else:
+                channel = self._channel_manager.channel_for_props(props,
+                        signal=True, conversation=None)
 
             if int(msg.content.klass) == 9:
                 timestamp = int(msg.time)

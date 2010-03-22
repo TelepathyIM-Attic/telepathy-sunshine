@@ -116,6 +116,11 @@ class GaduProfile(object):
             raise RuntimeError("You need to be connected, to send messages.")
         self.__connection.sendHTMLMessage(uin, html_message + '\0', plain_message + '\0')
 
+    def sendToConf(self, uin, html_message, plain_message, recipients):
+        if not self.connected:
+            raise RuntimeError("You need to be connected, to send messages.")
+        self.__connection.sendConfMessage(uin, html_message + '\0', plain_message + '\0', recipients)
+
     def importContacts(self, callback):
         """Issue an import request. This is non-blocking and returns no data."""
         if not self.connected:

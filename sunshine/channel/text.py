@@ -86,6 +86,9 @@ class SunshineRoomTextChannel(telepathy.server.ChannelTypeText, telepathy.server
         self._conn_ref = weakref.ref(conn)
         self.conn = conn
 
+        if conversation != None:
+            self.contacts = conversation
+
         self.handle = handle
         telepathy.server.ChannelTypeText.__init__(self, conn, manager, props)
         telepathy.server.ChannelInterfaceGroup.__init__(self)
@@ -94,9 +97,19 @@ class SunshineRoomTextChannel(telepathy.server.ChannelTypeText, telepathy.server
 
     def Send(self, message_type, text):
         if message_type == telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL:
-            logger.info("Sending message to %s, id %s, body: '%s'" % (str(self.handle.name), str(self.handle.id), unicode(text)))
-            msg = text.encode('windows-1250')
-            self.conn.gadu_client.sendTo(int(self.handle.name), str(text), str(msg))
+            recipients = []
+            if self.contacts != None:
+                for rhandle in self.contacts:
+                    recipients.append(rhandle.name)
+
+            for nr in recipients:
+                print nr
+                recs_tmp = sorted(recipients)
+                recs_tmp.remove(nr)
+
+                logger.info("Sending message to %s, id %s, body: '%s'" % (str(nr), str(self.handle.id), unicode(text)))
+                msg = text.encode('windows-1250')
+                self.conn.gadu_client.sendToConf(int(nr), str(text), str(msg), recs_tmp)
         else:
             raise telepathy.NotImplemented("Unhandled message type")
         self.Sent(int(time.time()), message_type, text)
@@ -126,7 +139,8 @@ class SunshineRoomTextChannel(telepathy.server.ChannelTypeText, telepathy.server
     def ListPendingMessages(self, clear):
         return telepathy.server.ChannelTypeText.ListPendingMessages(self, clear)
 
-
+    def getContacts(self, contacts):
+        self.contacts = contacts
 
 #        if clear:
 #            messages = self._pending_offline_messages.values()

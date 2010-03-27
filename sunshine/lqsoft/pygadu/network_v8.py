@@ -105,7 +105,7 @@ class LoginPacket(GaduPacket):
     login_hash      = StringField(3, length=64)
     status          = UIntField(4, default=0x02)
     flags           = UIntField(5, default=0x03)
-    features        = UIntField(6, default=0x00000367)
+    features        = UIntField(6, default=0x37)
     local_ip        = IntField(7)
     local_port      = ShortField(8)
     external_ip     = IntField(9)

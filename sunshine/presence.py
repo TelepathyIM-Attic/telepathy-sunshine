@@ -37,17 +37,19 @@ logger = logging.getLogger('Sunshine.Presence')
 
 
 class SunshinePresenceMapping(object):
+    #from busy to away
+    #from idle to dnd
     ONLINE = 'available'
     FFC  = 'free_for_chat'
-    BUSY = 'busy'
-    IDLE = 'dnd'
+    AWAY = 'away'
+    DND = 'dnd'
     INVISIBLE = 'hidden'
     OFFLINE = 'offline'
 
     to_gg = {
             ONLINE:     'AVAILABLE',
-            BUSY:       'BUSY',
-            IDLE:       'DND',
+            AWAY:       'BUSY',
+            DND:        'DND',
             INVISIBLE:  'HIDDEN',
             OFFLINE:    'NOT_AVAILABLE'
             }
@@ -55,8 +57,8 @@ class SunshinePresenceMapping(object):
     to_telepathy = {
             'AVAILABLE':                 ONLINE,
             'FFC':                      FFC,
-            'BUSY':                     BUSY,
-            'DND':                      IDLE,
+            'BUSY':                     AWAY,
+            'DND':                      DND,
             'HIDDEN':                   INVISIBLE,
             'NOT_AVAILABLE':             OFFLINE
             }
@@ -86,10 +88,10 @@ class SunshinePresenceMapping(object):
             0x4018:                     ONLINE,
             0x0002:                     ONLINE,
             0x4004:                     ONLINE,
-            0x0003:                     BUSY,
-            0x4005:                     BUSY,
-            0x0021:                     IDLE,
-            0x4022:                     IDLE,
+            0x0003:                     AWAY,
+            0x4005:                     AWAY,
+            0x0021:                     DND,
+            0x4022:                     DND,
             0x0014:                     INVISIBLE,
             0x4016:                     INVISIBLE,
             #Opisy graficzne
@@ -97,25 +99,24 @@ class SunshinePresenceMapping(object):
             0x4115:                     OFFLINE,
             0x4118:                     ONLINE,
             0x4104:                     ONLINE,
-            0x4105:                     BUSY,
-            0x4122:                     IDLE,
+            0x4105:                     AWAY,
+            0x4122:                     DND,
             0x4116:                     INVISIBLE
     }
 
     to_presence_type = {
             ONLINE:     telepathy.constants.CONNECTION_PRESENCE_TYPE_AVAILABLE,
             FFC:        telepathy.constants.CONNECTION_PRESENCE_TYPE_AVAILABLE,
-            BUSY:       telepathy.constants.CONNECTION_PRESENCE_TYPE_BUSY,
-            IDLE:       telepathy.constants.CONNECTION_PRESENCE_TYPE_EXTENDED_AWAY,
+            AWAY:       telepathy.constants.CONNECTION_PRESENCE_TYPE_AWAY,
+            DND:       telepathy.constants.CONNECTION_PRESENCE_TYPE_BUSY,
             INVISIBLE:  telepathy.constants.CONNECTION_PRESENCE_TYPE_HIDDEN,
             OFFLINE:    telepathy.constants.CONNECTION_PRESENCE_TYPE_OFFLINE
             }
 
-class SunshinePresence(telepathy.server.ConnectionInterfacePresence,
-        telepathy.server.ConnectionInterfaceSimplePresence):
+class SunshinePresence(telepathy.server.ConnectionInterfaceSimplePresence):
 
     def __init__(self):
-        telepathy.server.ConnectionInterfacePresence.__init__(self)
+        #telepathy.server.ConnectionInterfacePresence.__init__(self)
         telepathy.server.ConnectionInterfaceSimplePresence.__init__(self)
 
         dbus_interface = 'org.freedesktop.Telepathy.Connection.Interface.SimplePresence'
@@ -123,93 +124,93 @@ class SunshinePresence(telepathy.server.ConnectionInterfacePresence,
         self._implement_property_get(dbus_interface, {'Statuses' : self.get_statuses})
 
 
-    def GetStatuses(self):
-        # the arguments are in common to all on-line presences
-        arguments = {'message' : 's'}
-
-        # you get one of these for each status
-        # {name:(type, self, exclusive, {argument:types}}
-        return {
-            SunshinePresenceMapping.ONLINE:(
-                telepathy.CONNECTION_PRESENCE_TYPE_AVAILABLE,
-                True, True, arguments),
-            SunshinePresenceMapping.BUSY:(
-                telepathy.CONNECTION_PRESENCE_TYPE_BUSY,
-                True, True, arguments),
-            SunshinePresenceMapping.IDLE:(
-                telepathy.CONNECTION_PRESENCE_TYPE_EXTENDED_AWAY,
-                True, True, arguments),
-            SunshinePresenceMapping.INVISIBLE:(
-                telepathy.CONNECTION_PRESENCE_TYPE_HIDDEN,
-                True, True, {}),
-            SunshinePresenceMapping.OFFLINE:(
-                telepathy.CONNECTION_PRESENCE_TYPE_OFFLINE,
-                True, True, {})
-        }
-
-    def RequestPresence(self, contacts):
-        presences = self.get_presences(contacts)
-        self.PresenceUpdate(presences)
-
-    def GetPresence(self, contacts):
-        return self.get_presences(contacts)
-
-    def SetStatus(self, statuses):
-        status, arguments = statuses.items()[0]
-        if status == SunshinePresenceMapping.OFFLINE:
-            self.Disconnect()
-
-        presence = SunshinePresenceMapping.to_gg[status]
-        message = arguments.get('message', u'')
-
-        logger.info("Setting Presence to '%s'" % presence)
-        logger.info("Setting Personal message to '%s'" % message)
-
-        message = message.encode('UTF-8')
-        self._personal_message = message
-
-        if self._status == telepathy.CONNECTION_STATUS_CONNECTED:
-            self._self_presence_changed(SunshineHandleFactory(self, 'self'), presence, message)
-            self.profile.setMyState(presence, message)
-        else:
-            self._self_presence_changed(SunshineHandleFactory(self, 'self'), presence, message)
-
-    def get_presences(self, contacts):
-        presences = {}
-        for handle_id in contacts:
-            handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
-#            try:
-#                contact = handle.contact
-#            except AttributeError:
-#                contact = handle.profile
+#    def GetStatuses(self):
+#        # the arguments are in common to all on-line presences
+#        arguments = {'message' : 's'}
 #
-#            if contact is not None:
-#                presence = ButterflyPresenceMapping.to_telepathy[contact.presence]
-#                personal_message = unicode(contact.personal_message, "utf-8")
-#            else:
+#        # you get one of these for each status
+#        # {name:(type, self, exclusive, {argument:types}}
+#        return {
+#            SunshinePresenceMapping.ONLINE:(
+#                telepathy.CONNECTION_PRESENCE_TYPE_AVAILABLE,
+#                True, True, arguments),
+#            SunshinePresenceMapping.BUSY:(
+#                telepathy.CONNECTION_PRESENCE_TYPE_AWAY,
+#                True, True, arguments),
+#            SunshinePresenceMapping.IDLE:(
+#                telepathy.CONNECTION_PRESENCE_TYPE_BUSY,
+#                True, True, arguments),
+#            SunshinePresenceMapping.INVISIBLE:(
+#                telepathy.CONNECTION_PRESENCE_TYPE_HIDDEN,
+#                True, True, {}),
+#            SunshinePresenceMapping.OFFLINE:(
+#                telepathy.CONNECTION_PRESENCE_TYPE_OFFLINE,
+#                True, True, {})
+#        }
+#
+#    def RequestPresence(self, contacts):
+#        presences = self.get_presences(contacts)
+#        self.PresenceUpdate(presences)
+#
+#    def GetPresence(self, contacts):
+#        return self.get_presences(contacts)
+#
+#    def SetStatus(self, statuses):
+#        status, arguments = statuses.items()[0]
+#        if status == SunshinePresenceMapping.OFFLINE:
+#            self.Disconnect()
+#
+#        presence = SunshinePresenceMapping.to_gg[status]
+#        message = arguments.get('message', u'')
+#
+#        logger.info("Setting Presence to '%s'" % presence)
+#        logger.info("Setting Personal message to '%s'" % message)
+#
+#        message = message.encode('UTF-8')
+#        self._personal_message = message
+#
+#        if self._status == telepathy.CONNECTION_STATUS_CONNECTED:
+#            self._self_presence_changed(SunshineHandleFactory(self, 'self'), presence, message)
+#            self.profile.setMyState(presence, message)
+#        else:
+#            self._self_presence_changed(SunshineHandleFactory(self, 'self'), presence, message)
+#
+#    def get_presences(self, contacts):
+#        presences = {}
+#        for handle_id in contacts:
+#            handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
+##            try:
+##                contact = handle.contact
+##            except AttributeError:
+##                contact = handle.profile
+##
+##            if contact is not None:
+##                presence = ButterflyPresenceMapping.to_telepathy[contact.presence]
+##                personal_message = unicode(contact.personal_message, "utf-8")
+##            else:
+##                presence = SunshinePresenceMapping.OFFLINE
+##                personal_message = u""
+#            try:
+#                contact = handle.profile
 #                presence = SunshinePresenceMapping.OFFLINE
 #                personal_message = u""
-            try:
-                contact = handle.profile
-                presence = SunshinePresenceMapping.OFFLINE
-                personal_message = u""
-            except AttributeError:
-                #I dont know what to do here. Do I really need this? :P
-                contact = handle.contact
-                if contact is not None:
-                    presence = SunshinePresenceMapping.to_telepathy[contact.status]
-                    #thats bad, mkay?
-                    personal_message = unicode(contact.get_desc(), "utf-8")
-                else:
-                    presence = SunshinePresenceMapping.OFFLINE
-                    personal_message = u""
-
-            arguments = {}
-            if personal_message:
-                arguments = {'message' : personal_message}
-
-            presences[handle] = (0, {presence : arguments}) # TODO: Timestamp
-        return presences
+#            except AttributeError:
+#                #I dont know what to do here. Do I really need this? :P
+#                contact = handle.contact
+#                if contact is not None:
+#                    presence = SunshinePresenceMapping.to_telepathy[contact.status]
+#                    #thats bad, mkay?
+#                    personal_message = unicode(contact.get_desc(), "utf-8")
+#                else:
+#                    presence = SunshinePresenceMapping.OFFLINE
+#                    personal_message = u""
+#
+#            arguments = {}
+#            if personal_message:
+#                arguments = {'message' : personal_message}
+#
+#            presences[handle] = (0, {presence : arguments}) # TODO: Timestamp
+#        return presences
 
 
     # SimplePresence
@@ -269,11 +270,11 @@ class SunshinePresence(telepathy.server.ConnectionInterfacePresence,
             SunshinePresenceMapping.ONLINE:(
                 telepathy.CONNECTION_PRESENCE_TYPE_AVAILABLE,
                 True, True),
-            SunshinePresenceMapping.BUSY:(
-                telepathy.CONNECTION_PRESENCE_TYPE_BUSY,
+            SunshinePresenceMapping.AWAY:(
+                telepathy.CONNECTION_PRESENCE_TYPE_AWAY,
                 True, True),
-            SunshinePresenceMapping.IDLE:(
-                telepathy.CONNECTION_PRESENCE_TYPE_EXTENDED_AWAY,
+            SunshinePresenceMapping.DND:(
+                telepathy.CONNECTION_PRESENCE_TYPE_BUSY,
                 True, True),
             SunshinePresenceMapping.INVISIBLE:(
                 telepathy.CONNECTION_PRESENCE_TYPE_HIDDEN,
@@ -314,11 +315,11 @@ class SunshinePresence(telepathy.server.ConnectionInterfacePresence,
 
         self.PresencesChanged({handle: (presence_type, presence, personal_message)})
 
-        arguments = {}
-        if personal_message:
-            arguments = {'message' : personal_message}
+        #arguments = {}
+        #if personal_message:
+        #    arguments = {'message' : personal_message}
 
-        self.PresenceUpdate({handle: (int(time.time()), {presence:arguments})})
+        #self.PresenceUpdate({handle: (int(time.time()), {presence:arguments})})
 
     @async
     def _self_presence_changed(self, handle, presence, personal_message):
@@ -329,8 +330,8 @@ class SunshinePresence(telepathy.server.ConnectionInterfacePresence,
 
         self.PresencesChanged({handle: (presence_type, presence, personal_message)})
 
-        arguments = {}
-        if personal_message:
-            arguments = {'message' : personal_message}
+        #arguments = {}
+        #if personal_message:
+        #    arguments = {'message' : personal_message}
 
-        self.PresenceUpdate({handle: (int(time.time()), {presence:arguments})})
+        #self.PresenceUpdate({handle: (int(time.time()), {presence:arguments})})

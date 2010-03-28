@@ -44,10 +44,26 @@ from sunshine.contacts import SunshineContacts
 from sunshine.channel_manager import SunshineChannelManager
 from sunshine.util.decorator import async
 
-__all__ = ['SunshineConnection']
+__all__ = ['SunshineConfig', 'GaduClientFactory', 'SunshineConnection']
 
 logger = logging.getLogger('Sunshine.Connection')
 
+ssl_support = False
+
+#SSL
+try:
+    from OpenSSL import crypto, SSL
+    from twisted.internet import ssl
+    ssl_support = True
+except ImportError:
+    ssl_support = False
+if ssl and not ssl.supported:
+    ssl_support = False
+
+if ssl_support == False:
+    logger.info('SSL unavailable. Falling back to normal non-SSL connection.')
+else:
+    logger.info('Using SSL-like connection.')
 
 class SunshineConfig(object):
     def __init__(self, uin):
@@ -194,12 +210,14 @@ class SunshineConnection(telepathy.server.Connection,
     _optional_parameters = {
             'server' : 's',
             'port' : 'q',
+            'use-ssl' : 'b',
             'export-contacts' : 'b'
             }
     _parameter_defaults = {
             'server' : '91.197.13.67',
             'port' : dbus.UInt16(8074),
-            'export-contacts' : dbus.Boolean(0)
+            'use-ssl' : dbus.Boolean(False),
+            'export-contacts' : dbus.Boolean(False)
             }
 
     def __init__(self, manager, parameters):
@@ -207,6 +225,10 @@ class SunshineConnection(telepathy.server.Connection,
             parameters['export-contacts'] = bool(parameters['export-contacts'])
         except KeyError:
             parameters['export-contacts'] = False
+        try:
+            parameters['use-ssl'] = bool(parameters['use-ssl'])
+        except KeyError:
+            parameters['use-ssl'] = False
         self.check_parameters(parameters)
 
         try:
@@ -441,7 +463,7 @@ class SunshineConnection(telepathy.server.Connection,
 
     def getServerAdress(self, uin):
         logger.info("Fetching GG server adress.")
-        url = 'http://appmsg.gadu-gadu.pl/appsvc/appmsg_ver8.asp?fmnumber=%s&lastmsg=0&version=8.0.0.8731' % (str(uin))
+        url = 'http://appmsg.gadu-gadu.pl/appsvc/appmsg_ver10.asp?fmnumber=%s&lastmsg=0&version=10.0.0.10784' % (str(uin))
         d = getPage(url, timeout=10)
         d.addCallback(self.on_server_adress_fetched, uin)
         d.addErrback(self.on_server_adress_fetched_failed, uin)
@@ -451,8 +473,13 @@ class SunshineConnection(telepathy.server.Connection,
             result = result.replace('\n', '')
             a = result.split(' ')
             if a[0] == '0' and a[-1:][0] != 'notoperating':
-                logger.info("GG server adress fetched, IP: %s" % (a[-1:][0]))
-                reactor.connectTCP(a[-1:][0], 8074, self.factory)
+                addr = a[-1:][0]
+                logger.info("GG server adress fetched, IP: %s" % (addr))
+                if ssl_support:
+                    self.ssl = ssl.CertificateOptions(method=SSL.SSLv3_METHOD)
+                    reactor.connectSSL(addr, 443, self.factory, self.ssl)
+                else:
+                    reactor.connectTCP(addr, 8074, self.factory)
             else:
                 raise Exception()
         except:

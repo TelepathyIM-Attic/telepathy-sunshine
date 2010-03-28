@@ -42,7 +42,7 @@ from sunshine.handle import SunshineHandleFactory
 from sunshine.capabilities import SunshineCapabilities
 from sunshine.contacts import SunshineContacts
 from sunshine.channel_manager import SunshineChannelManager
-from sunshine.util.decorator import async
+from sunshine.util.decorator import async, stripHTML
 
 __all__ = ['SunshineConfig', 'GaduClientFactory', 'SunshineConnection']
 
@@ -272,8 +272,7 @@ class SunshineConnection(telepathy.server.Connection,
                     self.profile.addGroup(g)
             
             logger.info("We have %s contacts in file." % (self.configfile.get_contacts_count()))
-                
-
+            
             self.factory = GaduClientFactory(self.profile)
             self._channel_manager = SunshineChannelManager(self)
 
@@ -616,7 +615,11 @@ class SunshineConnection(telepathy.server.Connection,
 
             logger.info("Msg from %r %d %d [%r] [%r]" % (msg.sender, msg.content.offset_plain, msg.content.offset_attrs, msg.content.plain_message, msg.content.html_message))
 
-            message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').replace('\r', '').decode('windows-1250').encode('utf-8'))
+            #we need to strip all html tags
+            text = stripHTML(msg.content.html_message)
+
+            #message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').replace('\r', '').decode('windows-1250').encode('utf-8'))
+            message = "%s" % unicode(str(text).replace('\x00', '').replace('\r', ''))
             #print 'message: ', message
             channel.Received(self._recv_id, timestamp, ahandle, type, 0, message)
             self._recv_id += 1
@@ -643,7 +646,12 @@ class SunshineConnection(telepathy.server.Connection,
                     handle, False)
             channel = self._channel_manager.channel_for_props(props,
                     signal=True, conversation=None)
-            message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').replace('\r', '').decode('windows-1250').encode('utf-8'))
+
+            #we need to strip all html tags
+            text = stripHTML(msg.content.html_message).replace('&lt;', '<').replace('&gt;', '>')
+
+            message = "%s" % unicode(str(text).replace('\x00', '').replace('\r', ''))
+            #message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').replace('\r', '').decode('windows-1250').encode('utf-8'))
             #print 'message: ', message
             channel.Received(self._recv_id, timestamp, handle, type, 0, message)
             self._recv_id += 1

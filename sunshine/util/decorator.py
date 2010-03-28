@@ -25,8 +25,15 @@ import time
 
 import gobject
 
-__all__ = ['decorator', 'rw_property', 'deprecated', 'unstable', 'async',
+import re
+
+__all__ = ['stripHTML', 'decorator', 'rw_property', 'deprecated', 'unstable', 'async',
         'throttled']
+
+def stripHTML(string):
+    "Replacing HTML-like tags from text."
+    p = re.compile(r'<.*?>')
+    return p.sub('', string)
 
 
 def decorator(function):

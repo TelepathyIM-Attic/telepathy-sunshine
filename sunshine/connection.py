@@ -198,8 +198,8 @@ class SunshineConnection(telepathy.server.Connection,
             }
     _parameter_defaults = {
             'server' : '91.197.13.67',
-            'port' : 8074,
-            'export-contacts' : False
+            'port' : dbus.UInt16(8074),
+            'export-contacts' : dbus.Boolean(0)
             }
 
     def __init__(self, manager, parameters):

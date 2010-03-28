@@ -105,7 +105,7 @@ class LoginPacket(GaduPacket):
     login_hash      = StringField(3, length=64)
     status          = UIntField(4, default=0x02)
     flags           = UIntField(5, default=0x03)
-    features        = UIntField(6, default=0x37)
+    features        = UIntField(6, default=0x637)
     local_ip        = IntField(7)
     local_port      = ShortField(8)
     external_ip     = IntField(9)
@@ -220,6 +220,11 @@ class XmlEventPacket(GaduPacket):
 @inpacket(0x2c)
 class XmlActionPacket(GaduPacket):
     data    =   StringField(0, length=-1)
+
+#define GG_RECV_MSG_ACK 0x0046
+@outpacket(0x46)
+class RecvMsgAck(GaduPacket):
+    num     = IntField(0)
 
 #
 # GG_USER_DATA packets

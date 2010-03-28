@@ -30,6 +30,8 @@ class GaduClient(Protocol):
         self.firstPing = True
         self.__pingThread = None
 
+        self.msg_id = 0
+
     def connectionMade(self):
         self.__buffer = ''        
         self.__chdr = None
@@ -140,7 +142,10 @@ class GaduClient(Protocol):
             self.user_profile._updateContact(struct)
 
     def _handleMessageInPacket(self, msg):
+        self.msg_id += 1
         self.user_profile.onMessageReceived(msg)
+
+        self.sendMsgAck(self.msg_id)
 
     def _handleMessageAckPacket(self, msg):
         print "MSG_Status=%x, recipient=%d, seq=%d" % (msg.msg_status, msg.recipient, msg.seq) 
@@ -190,6 +195,11 @@ class GaduClient(Protocol):
         if self.firstPing != True:
             self._sendPacket( Resolver.by_name('PingPacket')() )
         self.firstPing = False
+
+    def sendMsgAck(self, num):
+        klass = Resolver.by_name('RecvMsgAck')
+        ack = klass(num=num)
+        self._sendPacket(ack)
 
     def sendHTMLMessage(self, rcpt, html_text, plain_message):
         klass = Resolver.by_name('MessageOutPacket')

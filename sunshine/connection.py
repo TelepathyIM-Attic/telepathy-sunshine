@@ -622,9 +622,9 @@ class SunshineConnection(telepathy.server.Connection,
                 #we need to strip all html tags
                 text = stripHTML(msg.content.html_message).replace('&lt;', '<').replace('&gt;', '>')
             else:
-                text = msg.content.plain_message
+                text = (msg.content.plain_message).decode('windows-1250')
 
-            message = "%s" % unicode(str(text).replace('\x00', '').replace('\r', ''))
+            message = "%s" % unicode(str(text).replace('\x00', '').replace('\r', '').decode('UTF-8'))
             #print 'message: ', message
             channel.Received(self._recv_id, timestamp, ahandle, type, 0, message)
             self._recv_id += 1
@@ -656,7 +656,8 @@ class SunshineConnection(telepathy.server.Connection,
                 #we need to strip all html tags
                 text = stripHTML(msg.content.html_message).replace('&lt;', '<').replace('&gt;', '>')
             else:
-                text = msg.content.plain_message
+                text = (msg.content.plain_message).decode('windows-1250')
+
 
             message = "%s" % unicode(str(text).replace('\x00', '').replace('\r', ''))
             #message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').replace('\r', '').decode('windows-1250').encode('utf-8'))

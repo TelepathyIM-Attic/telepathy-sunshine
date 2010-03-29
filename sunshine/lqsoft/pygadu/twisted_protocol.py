@@ -127,10 +127,13 @@ class GaduClient(Protocol):
         self.loginSuccess.errback(msg)
 
     def _handleXmlEventPacket(self, data):
-        self.user_profile.onXml(data)
+        self.user_profile.onXmlEvent(data)
         
     def _handleXmlActionPacket(self, data):
-        self.user_profile.onXml(data)
+        self.user_profile.onXmlAction(data)
+
+    def _handleUserDataPacket(self, data):
+        self.user_profile.onUserData(data)
 
     def _handleStatusUpdatePacket(self, msg):
         self.user_profile._updateContact(msg.contact)

@@ -248,6 +248,9 @@ class SunshineConnection(telepathy.server.Connection,
             self.profile.onLoginFailure = self.on_loginFailed
             self.profile.onContactStatusChange = self.on_updateContact
             self.profile.onMessageReceived = self.on_messageReceived
+            self.profile.onXmlAction = self.onXmlAction
+            self.profile.onXmlEvent = self.onXmlEvent
+            self.profile.onUserData = self.onUserData
             #self.profile.onStatusNoticiesRecv = self.on_StatusNoticiesRecv
 
             self.password = str(parameters['password'])
@@ -615,10 +618,12 @@ class SunshineConnection(telepathy.server.Connection,
 
             logger.info("Msg from %r %d %d [%r] [%r]" % (msg.sender, msg.content.offset_plain, msg.content.offset_attrs, msg.content.plain_message, msg.content.html_message))
 
-            #we need to strip all html tags
-            text = stripHTML(msg.content.html_message)
+            if msg.content.html_message:
+                #we need to strip all html tags
+                text = stripHTML(msg.content.html_message).replace('&lt;', '<').replace('&gt;', '>')
+            else:
+                text = msg.content.plain_message
 
-            #message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').replace('\r', '').decode('windows-1250').encode('utf-8'))
             message = "%s" % unicode(str(text).replace('\x00', '').replace('\r', ''))
             #print 'message: ', message
             channel.Received(self._recv_id, timestamp, ahandle, type, 0, message)
@@ -647,11 +652,23 @@ class SunshineConnection(telepathy.server.Connection,
             channel = self._channel_manager.channel_for_props(props,
                     signal=True, conversation=None)
 
-            #we need to strip all html tags
-            text = stripHTML(msg.content.html_message).replace('&lt;', '<').replace('&gt;', '>')
+            if msg.content.html_message:
+                #we need to strip all html tags
+                text = stripHTML(msg.content.html_message).replace('&lt;', '<').replace('&gt;', '>')
+            else:
+                text = msg.content.plain_message
 
             message = "%s" % unicode(str(text).replace('\x00', '').replace('\r', ''))
             #message = "%s" % unicode(str(msg.content.plain_message).replace('\x00', '').replace('\r', '').decode('windows-1250').encode('utf-8'))
             #print 'message: ', message
             channel.Received(self._recv_id, timestamp, handle, type, 0, message)
             self._recv_id += 1
+            
+    def onXmlAction(self, xml):
+        logger.info("XmlAction: %s" % xml.data)
+
+    def onXmlEvent(self, xml):
+        logger.info("XmlEvent: %s" % xml,data)
+
+    def onUserData(self, data):
+        logger.info("UserData: %s" % str(data))

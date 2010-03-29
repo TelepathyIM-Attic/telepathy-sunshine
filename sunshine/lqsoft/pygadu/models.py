@@ -192,8 +192,15 @@ class GaduProfile(object):
         """Called when a contact list notify was sent"""
         pass
 
-    def onXml(self, data):
-        """Called when a XML action/event packet was sent"""
+    def onXmlAction(self, data):
+        """Called when a XML action packet was sent"""
+        pass
+
+    def onXmlEvent(self, data):
+        """Called when a XML event packet was sent"""
+        pass
+
+    def onUserData(self, data):
         pass
 
     def isContactExist(self, uin):

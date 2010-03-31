@@ -57,8 +57,12 @@ try:
     ssl_support = True
 except ImportError:
     ssl_support = False
-if ssl and not ssl.supported:
+try:
+    if ssl and ssl.supported:
+        ssl_support = True
+except NameError:
     ssl_support = False
+
 
 if ssl_support == False:
     logger.info('SSL unavailable. Falling back to normal non-SSL connection.')

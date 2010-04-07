@@ -207,6 +207,9 @@ class SunshineConnection(telepathy.server.Connection,
         SunshineContacts
         ):
 
+    _secret_parameters = set([
+            'password'
+            ])
     _mandatory_parameters = {
             'account' : 's',
             'password' : 's'
@@ -214,25 +217,15 @@ class SunshineConnection(telepathy.server.Connection,
     _optional_parameters = {
             'server' : 's',
             'port' : 'q',
-            'use-ssl' : 'b',
             'export-contacts' : 'b'
             }
     _parameter_defaults = {
             'server' : '91.197.13.67',
-            'port' : dbus.UInt16(8074),
-            'use-ssl' : dbus.Boolean(False),
-            'export-contacts' : dbus.Boolean(False)
+            'port' : 8074,
+            'export-contacts' : False
             }
 
     def __init__(self, manager, parameters):
-        try:
-            parameters['export-contacts'] = bool(parameters['export-contacts'])
-        except KeyError:
-            parameters['export-contacts'] = False
-        try:
-            parameters['use-ssl'] = bool(parameters['use-ssl'])
-        except KeyError:
-            parameters['use-ssl'] = False
         self.check_parameters(parameters)
 
         try:
@@ -671,6 +664,31 @@ class SunshineConnection(telepathy.server.Connection,
             
     def onXmlAction(self, xml):
         logger.info("XmlAction: %s" % xml.data)
+
+        #event occurs when user from our list change avatar
+        #<events>
+        #    <event id="12989655759719404037">
+        #        <type>28</type>
+        #        <sender>4634020</sender>
+        #        <time>1270577383</time>
+        #        <body></body>
+        #        <bodyXML>
+        #            <smallAvatar>http://avatars.gadu-gadu.pl/small/4634020?ts=1270577383</smallAvatar>
+        #        </bodyXML>
+        #    </event>
+        #</events>
+        try:
+            tree = ET.fromstring(xml.data)
+            core = tree.find("event")
+            type = core.find("type").text
+            if type == '28':
+                sender = core.find("sender").text
+                url = core.find("bodyXML/smallAvatar").text
+                print type
+                print sender
+                print url
+        except:
+            pass
 
     def onXmlEvent(self, xml):
         logger.info("XmlEvent: %s" % xml,data)

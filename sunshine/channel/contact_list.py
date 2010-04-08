@@ -179,6 +179,8 @@ class SunshineListChannel(
             if ad or lp or rp:
                 handle = SunshineHandleFactory(self._conn_ref(), 'contact',
                         contact.uin, None)
+                #capabilities
+                self._conn_ref().contactAdded(handle)
                 if ad: added.add(handle)
                 if lp: local_pending.add(handle)
                 if rp: remote_pending.add(handle)
@@ -229,9 +231,10 @@ class SunshineSubscribeListChannel(SunshineListChannel):
             #and group
             if self._conn_ref().pending_contacts_to_group.has_key(handle.name):
                 logger.info("Trying to add temporary group.")
-                print str(self._conn_ref().pending_contacts_to_group)
-                print str(self._conn_ref().pending_contacts_to_group[handle.name])
+                #print str(self._conn_ref().pending_contacts_to_group)
+                #print str(self._conn_ref().pending_contacts_to_group[handle.name])
                 handle.contact.updateGroups(self._conn_ref().pending_contacts_to_group[handle.name])
+            self._conn_ref().contactAdded(handle)
             logger.info("Contact added.")
 
     def RemoveMembers(self, contacts, message):

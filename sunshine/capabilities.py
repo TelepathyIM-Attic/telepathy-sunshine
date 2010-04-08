@@ -138,16 +138,13 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
                 signature='ua(a{sv}as)')
             self.ContactCapabilitiesChanged(updated)
 
-    # papyon.event.ContactEventInterface
     def on_contact_client_capabilities_changed(self, contact):
         self._update_capabilities(contact)
 
-    # papyon.event.AddressBookEventInterface
-    def on_contact_added(self, contact):
+
+    def contactAdded(self, handle):
         """When we add a contact in our contact list, add the
         capabilities to create text channel to the contact"""
-        handle = SunshineHandleFactory(self._conn_ref(), 'contact',
-                str(contact), None)
         self.add_text_capabilities([handle])
 
     def add_text_capabilities(self, contacts_handles):

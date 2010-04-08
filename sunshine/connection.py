@@ -286,8 +286,7 @@ class SunshineConnection(telepathy.server.Connection,
             telepathy.server.Connection.__init__(self, 'gadugadu', account, 'sunshine')
             telepathy.server.ConnectionInterfaceRequests.__init__(self)
             SunshinePresence.__init__(self)
-            self.avatars_interface = SunshineAvatars.__init__(self)
-            SunshineCapabilities.__init__(self)
+            SunshineAvatars.__init__(self)
             SunshineContacts.__init__(self)
 
             self.set_self_handle(SunshineHandleFactory(self, 'self'))
@@ -504,6 +503,7 @@ class SunshineConnection(telepathy.server.Connection,
         self.makeTelepathyGroupChannels()
         
         SunshineAliasing.__init__(self)
+        SunshineCapabilities.__init__(self)
             
         self._status = telepathy.CONNECTION_STATUS_CONNECTED
         self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
@@ -528,10 +528,12 @@ class SunshineConnection(telepathy.server.Connection,
             self.makeTelepathyGroupChannels()
 
             SunshineAliasing.__init__(self)
+            SunshineCapabilities.__init__(self)
     
             self._status = telepathy.CONNECTION_STATUS_CONNECTED
             self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
                     telepathy.CONNECTION_STATUS_REASON_REQUESTED)
+        self._populate_capabilities()
 
     def on_loginFailed(self, response):
         logger.info("Login failed: ", response)
@@ -552,14 +554,14 @@ class SunshineConnection(telepathy.server.Connection,
         if hasattr(msg.content.attrs, 'conference') and msg.content.attrs.conference != None:
             recipients = msg.content.attrs.conference.recipients
             #recipients.append(self.profile.uin)
-            print msg.sender
-            print 'recipients:', recipients
+            #print msg.sender
+            #print 'recipients:', recipients
             recipients = map(str, recipients)
             recipients.append(str(msg.sender))
-            print 'recipients:', recipients
+            #print 'recipients:', recipients
             recipients = sorted(recipients)
             conf_name = ', '.join(map(str, recipients))
-            print 'conf_name:', conf_name
+            #print 'conf_name:', conf_name
 
             #active handle for current writting contact
             ahandle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT,
@@ -573,7 +575,7 @@ class SunshineConnection(telepathy.server.Connection,
 
             #now we need to preapare a new room and make initial users in it
             room_handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_ROOM, str(conf_name))
-            print 'room_handle_id:', room_handle_id
+            #print 'room_handle_id:', room_handle_id
 
             handles = []
             

@@ -109,6 +109,15 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
 #        self.msn_client.profile.msn_object = None
 #        self._avatar_known = True
 
+    def getAvatar(self, sender, url):
+        logger.info("getAvatar: %s %s" % (sender, url))
+        handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT, str(sender))
+        
+        if handle_id != 0:
+            d = getPage(str(url), timeout=20)
+            d.addCallback(self.on_fetch_avatars_ok, str(url), handle_id)
+            d.addErrback(self.on_fetch_avatars_failed, str(url), handle_id)
+
     def on_fetch_avatars_file_ok(self, result, url, handle_id):
         try:
             if result:

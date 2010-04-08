@@ -286,7 +286,7 @@ class SunshineConnection(telepathy.server.Connection,
             telepathy.server.Connection.__init__(self, 'gadugadu', account, 'sunshine')
             telepathy.server.ConnectionInterfaceRequests.__init__(self)
             SunshinePresence.__init__(self)
-            SunshineAvatars.__init__(self)
+            self.avatars_interface = SunshineAvatars.__init__(self)
             SunshineCapabilities.__init__(self)
             SunshineContacts.__init__(self)
 
@@ -661,7 +661,7 @@ class SunshineConnection(telepathy.server.Connection,
             #print 'message: ', message
             channel.Received(self._recv_id, timestamp, handle, type, 0, message)
             self._recv_id += 1
-            
+
     def onXmlAction(self, xml):
         logger.info("XmlAction: %s" % xml.data)
 
@@ -684,9 +684,8 @@ class SunshineConnection(telepathy.server.Connection,
             if type == '28':
                 sender = core.find("sender").text
                 url = core.find("bodyXML/smallAvatar").text
-                print type
-                print sender
-                print url
+                logger.info("XMLAction: Avatar Update")
+                self.getAvatar(sender, url)
         except:
             pass
 

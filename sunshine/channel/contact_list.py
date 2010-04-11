@@ -124,9 +124,9 @@ class SunshineListChannel(
         telepathy.server.ChannelInterfaceGroup):
     "Abstract Contact List channels"
 
-    def __init__(self, connection, manager, props):
+    def __init__(self, connection, manager, props, object_path=None):
         self._conn_ref = weakref.ref(connection)
-        telepathy.server.ChannelTypeContactList.__init__(self, connection, manager, props)
+        telepathy.server.ChannelTypeContactList.__init__(self, connection, manager, props, object_path=None)
         telepathy.server.ChannelInterfaceGroup.__init__(self)
         self._populate(connection)
 
@@ -184,6 +184,9 @@ class SunshineListChannel(
                 if ad: added.add(handle)
                 if lp: local_pending.add(handle)
                 if rp: remote_pending.add(handle)
+        #self._conn_ref()._populate_capabilities()
+        #capabilities for self handle
+        self._conn_ref().contactAdded(self._conn_ref().GetSelfHandle())
         self.MembersChanged('', added, (), local_pending, remote_pending, 0,
                 telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
 

@@ -34,14 +34,14 @@ logger = logging.getLogger('Sunshine.TextChannel')
 
 class SunshineTextChannel(telepathy.server.ChannelTypeText):
 
-    def __init__(self, conn, manager, conversation, props):
+    def __init__(self, conn, manager, conversation, props, object_path=None):
         _, surpress_handler, handle = manager._get_type_requested_handle(props)
         self._recv_id = 0
         self._conn_ref = weakref.ref(conn)
         self.conn = conn
 
         self.handle = handle
-        telepathy.server.ChannelTypeText.__init__(self, conn, manager, props)
+        telepathy.server.ChannelTypeText.__init__(self, conn, manager, props, object_path=None)
 
     def Send(self, message_type, text):
         if message_type == telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL:

@@ -153,7 +153,7 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
         cc_ret = dbus.Dictionary({}, signature='ua(a{sv}as)')
         for handle in contacts_handles:
             ctype = telepathy.CHANNEL_TYPE_TEXT
-            if handle in self._caps:
+            if handle in self._caps and ctype in self._caps[handle]:
                 old_gen, old_spec = self._caps[handle][ctype]
             else:
                 old_gen = 0
@@ -170,6 +170,30 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
 
         self.CapabilitiesChanged(ret)
         self.ContactCapabilitiesChanged(cc_ret)
+
+#    def add_create_capability(self, contact_handle):
+#        """Add the create capability for self handle."""
+#        ret = []
+#        cc_ret = dbus.Dictionary({}, signature='ua(a{sv}as)')
+#
+#        ctype = telepathy.CHANNEL_TYPE_TEXT
+#        if handle in self._caps:
+#            old_gen, old_spec = self._caps[handle][ctype]
+#        else:
+#            old_gen = 0
+#            old_spec = 0
+#        new_gen = old_gen
+#        new_gen |= telepathy.CONNECTION_CAPABILITY_FLAG_CREATE
+#
+#        diff = (int(handle), ctype, old_gen, new_gen, old_spec, old_spec)
+#        ret.append(diff)
+#
+#        # ContactCapabilities
+#        self._contact_caps.setdefault(handle, []).append(self.text_chat_class)
+#        cc_ret[handle] = self._contact_caps[handle]
+#
+#        self.CapabilitiesChanged(ret)
+#        self.ContactCapabilitiesChanged(cc_ret)
 
     def _update_capabilities(self, contact):
         handle = SunshineHandleFactory(self, 'contact',
@@ -234,12 +258,17 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
         contacts list."""
         handles = set([self._self_handle])
         for contact in self.profile.contacts:
-                handle = SunshineHandleFactory(self, 'contact',
-                        str(contact), None)
-                handles.add(handle)
+            handle = SunshineHandleFactory(self, 'contact',
+                    str(contact.uin), None)
+            handles.add(handle)
         self.add_text_capabilities(handles)
 
         # These caps were updated before we were online.
         for caps in self._update_capabilities_calls:
             self.UpdateCapabilities(caps)
         self._update_capabilities_calls = []
+
+    def updateCapabilitiesCalls(self):
+        # These caps were updated before we were online.
+        for caps in self._update_capabilities_calls:
+            self.UpdateCapabilities(caps)

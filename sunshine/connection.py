@@ -288,6 +288,9 @@ class SunshineConnection(telepathy.server.Connection,
             SunshinePresence.__init__(self)
             SunshineAvatars.__init__(self)
             SunshineContacts.__init__(self)
+            SunshineCapabilities.__init__(self)
+            
+            self.updateCapabilitiesCalls()
 
             self.set_self_handle(SunshineHandleFactory(self, 'self'))
 
@@ -360,6 +363,9 @@ class SunshineConnection(telepathy.server.Connection,
         self.profile.disconnect()
         #if reactor.running:
         #    reactor.stop()
+
+    def GetInterfaces(self):
+        return self._interfaces
 
     def RequestHandles(self, handle_type, names, sender):
         logger.info("Method RequestHandles called, handle type: %s, names: %s" % (str(handle_type), str(names)))
@@ -503,7 +509,6 @@ class SunshineConnection(telepathy.server.Connection,
         self.makeTelepathyGroupChannels()
         
         SunshineAliasing.__init__(self)
-        SunshineCapabilities.__init__(self)
             
         self._status = telepathy.CONNECTION_STATUS_CONNECTED
         self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
@@ -528,12 +533,12 @@ class SunshineConnection(telepathy.server.Connection,
             self.makeTelepathyGroupChannels()
 
             SunshineAliasing.__init__(self)
-            SunshineCapabilities.__init__(self)
     
             self._status = telepathy.CONNECTION_STATUS_CONNECTED
             self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
                     telepathy.CONNECTION_STATUS_REASON_REQUESTED)
-        self._populate_capabilities()
+        #self._populate_capabilities()
+        #self.contactAdded(self.GetSelfHandle())
 
     def on_loginFailed(self, response):
         logger.info("Login failed: ", response)

@@ -25,7 +25,7 @@ import telepathy
 from telepathy._generated.Connection_Interface_Contact_Capabilities \
      import ConnectionInterfaceContactCapabilities
 
-from butterfly.util.decorator import async
+from sunshine.util.decorator import async
 from sunshine.handle import SunshineHandleFactory
 
 __all__ = ['SunshineCapabilities']

@@ -42,7 +42,7 @@ from sunshine.handle import SunshineHandleFactory
 from sunshine.capabilities import SunshineCapabilities
 from sunshine.contacts import SunshineContacts
 from sunshine.channel_manager import SunshineChannelManager
-from sunshine.util.decorator import async, stripHTML
+from sunshine.util.decorator import async, stripHTML, unescape
 
 __all__ = ['SunshineConfig', 'GaduClientFactory', 'SunshineConnection']
 
@@ -658,9 +658,9 @@ class SunshineConnection(telepathy.server.Connection,
 
             if msg.content.html_message:
                 #we need to strip all html tags
-                text = stripHTML(msg.content.html_message).replace('&lt;', '<').replace('&gt;', '>')
+                text = unescape(stripHTML(msg.content.html_message))
             else:
-                text = (msg.content.plain_message).decode('windows-1250')
+                text = unescape((msg.content.plain_message).decode('windows-1250'))
 
 
             message = "%s" % unicode(str(text).replace('\x00', '').replace('\r', ''))

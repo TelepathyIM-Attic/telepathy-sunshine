@@ -24,7 +24,7 @@ import time
 
 import telepathy
 
-from sunshine.util.decorator import async
+from sunshine.util.decorator import async, escape
 from sunshine.handle import SunshineHandleFactory
 
 __all__ = ['SunshineTextChannel']
@@ -47,7 +47,9 @@ class SunshineTextChannel(telepathy.server.ChannelTypeText):
         if message_type == telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL:
             logger.info("Sending message to %s, id %s, body: '%s'" % (str(self.handle.name), str(self.handle.id), unicode(text)))
             msg = text.decode('UTF-8').encode('windows-1250', 'replace')
-            self.conn.gadu_client.sendTo(int(self.handle.name), str(text), str(msg))
+            #gg_text = escape(text.decode('UTF-8')).encode('UTF-8').replace('<', '&lt;').replace('>', '&gt;')
+            gg_text = text.decode('UTF-8', 'xmlcharrefreplace').replace('<', '&lt;').replace('>', '&gt;')
+            self.conn.gadu_client.sendTo(int(self.handle.name), str(gg_text), str(msg))
         else:
             raise telepathy.NotImplemented("Unhandled message type")
         self.Sent(int(time.time()), message_type, text)

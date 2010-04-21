@@ -61,9 +61,9 @@ class SunshineContacts(telepathy.server.ConnectionInterfaceContacts):
                 logger.debug("Ignoring unsupported interface %s" % interface)
 
         handle_type = telepathy.HANDLE_TYPE_CONTACT
-        ret = {}
+        ret = dbus.Dictionary(signature='ua{sv}')
         for handle in handles:
-            ret[handle] = {}
+            ret[handle] = dbus.Dictionary(signature='sv')
 
         functions = {
             telepathy.CONNECTION :

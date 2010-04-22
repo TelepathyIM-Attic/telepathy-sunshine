@@ -37,6 +37,11 @@ __all__ = ['SunshineAvatars']
 
 logger = logging.getLogger('Sunshine.Avatars')
 
+SUPPORTED_AVATAR_MIME_TYPES = dbus.Array(["image/png", "image/jpeg", "image/gif"], signature='s')
+MINIMUM_AVATAR_PIXELS = dbus.UInt32(96)
+RECOMMENDED_AVATAR_PIXELS = dbus.UInt32(96)
+MAXIMUM_AVATAR_PIXELS = dbus.UInt32(256)
+MAXIMUM_AVATAR_BYTES = dbus.UInt32(500 * 1024)
 
 class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
 
@@ -44,10 +49,25 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
         print 'SunshineAvatars called.'
         self._avatar_known = False
         telepathy.server.ConnectionInterfaceAvatars.__init__(self)
+        
+        dbus_interface = telepathy.CONNECTION_INTERFACE_AVATARS
+        self._implement_property_get(dbus_interface, {
+            'SupportedAvatarMIMETypes':
+            lambda: SUPPORTED_AVATAR_MIME_TYPES,
+            'MinimumAvatarHeight': lambda: MINIMUM_AVATAR_PIXELS,
+            'MinimumAvatarWidth': lambda: MINIMUM_AVATAR_PIXELS,
+            'RecommendedAvatarHeight': lambda: RECOMMENDED_AVATAR_PIXELS,
+            'RecommendedAvatarWidth': lambda: RECOMMENDED_AVATAR_PIXELS,
+            'MaximumAvatarHeight': lambda: MAXIMUM_AVATAR_PIXELS,
+            'MaximumAvatarWidth': lambda: MAXIMUM_AVATAR_PIXELS,
+            'MaximumAvatarBytes': lambda: MAXIMUM_AVATAR_BYTES,
+        })
 
     def GetAvatarRequirements(self):
-        mime_types = ("image/png","image/jpeg","image/gif")
-        return (mime_types, 0, 0, 0, 0, 0)
+        return (SUPPORTED_AVATAR_MIME_TYPES,
+                MINIMUM_AVATAR_PIXELS, MINIMUM_AVATAR_PIXELS,
+                MAXIMUM_AVATAR_PIXELS, MAXIMUM_AVATAR_PIXELS,
+                MAXIMUM_AVATAR_BYTES)
 
     def GetKnownAvatarTokens(self, contacts):
         result = {}

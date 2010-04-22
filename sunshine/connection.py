@@ -185,6 +185,7 @@ class GaduClientFactory(protocol.ClientFactory):
             self.config.exportLoop = None
         if reactor.running:
             reactor.stop()
+            sys.exit(0)
 
     def clientConnectionFailed(self, connector, reason):
         logger.info('Connection failed. Reason: %s' % (reason))
@@ -197,6 +198,7 @@ class GaduClientFactory(protocol.ClientFactory):
             self.config.exportLoop = None
         if reactor.running:
             reactor.stop()
+            sys.exit(0)
 
 class SunshineConnection(telepathy.server.Connection,
         telepathy.server.ConnectionInterfaceRequests,
@@ -217,12 +219,16 @@ class SunshineConnection(telepathy.server.Connection,
     _optional_parameters = {
             'server' : 's',
             'port' : 'q',
-            'export-contacts' : 'b'
+            'export-contacts' : 'b',
+            'use-ssl' : 'b',
+            'use-specified-server' : 'b'
             }
     _parameter_defaults = {
             'server' : '91.197.13.67',
             'port' : 8074,
-            'export-contacts' : False
+            'export-contacts' : False,
+            'use-ssl' : False,
+            'use-specified-server' : False
             }
 
     def __init__(self, manager, parameters):
@@ -234,8 +240,10 @@ class SunshineConnection(telepathy.server.Connection,
 
             self._manager = weakref.proxy(manager)
             self._account = (parameters['account'], parameters['password'])
-            self._server = (parameters['server'], parameters['port'])
+            self.param_server = (parameters['server'], parameters['port'])
             self._export_contacts = bool(parameters['export-contacts'])
+            self.param_use_ssl = bool(parameters['use-ssl'])
+            self.param_specified_server = bool(parameters['use-specified-server'])
 
             self.profile = GaduProfile(uin= int(parameters['account']) )
             self.profile.uin = int(parameters['account'])
@@ -345,7 +353,10 @@ class SunshineConnection(telepathy.server.Connection,
             self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTING,
                     telepathy.CONNECTION_STATUS_REASON_REQUESTED)
             self.__disconnect_reason = telepathy.CONNECTION_STATUS_REASON_NONE_SPECIFIED
-            self.getServerAdress(self._account[0])
+            if self.param_specified_server:
+                self.makeConnection(self.param_server[0], self.param_server[1])
+            else:
+                self.getServerAdress(self._account[0])
 
     def Disconnect(self):
         if self.profile.contactsLoop:
@@ -472,6 +483,14 @@ class SunshineConnection(telepathy.server.Connection,
         d.addCallback(self.on_server_adress_fetched, uin)
         d.addErrback(self.on_server_adress_fetched_failed, uin)
 
+    def makeConnection(self, ip, port):
+        logger.info("%s %s %s" % (ip, port, self.param_use_ssl))
+        if ssl_support and self.param_use_ssl:
+            self.ssl = ssl.CertificateOptions(method=SSL.SSLv3_METHOD)
+            reactor.connectSSL(ip, port, self.factory, self.ssl)
+        else:
+            reactor.connectTCP(ip, port, self.factory)
+
     def on_server_adress_fetched(self, result, uin):
         try:
             result = result.replace('\n', '')
@@ -479,11 +498,12 @@ class SunshineConnection(telepathy.server.Connection,
             if a[0] == '0' and a[-1:][0] != 'notoperating':
                 addr = a[-1:][0]
                 logger.info("GG server adress fetched, IP: %s" % (addr))
-                if ssl_support:
-                    self.ssl = ssl.CertificateOptions(method=SSL.SSLv3_METHOD)
-                    reactor.connectSSL(addr, 443, self.factory, self.ssl)
+                if ssl_support and self.param_use_ssl:
+                    port = 443
+                    self.makeConnection(addr, port)
                 else:
-                    reactor.connectTCP(addr, 8074, self.factory)
+                    port = 8074
+                    self.makeConnection(addr, port)
             else:
                 raise Exception()
         except:

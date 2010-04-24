@@ -185,7 +185,7 @@ class GaduClientFactory(protocol.ClientFactory):
             self.config.exportLoop = None
         if reactor.running:
             reactor.stop()
-            sys.exit(0)
+            os._exit(1)
 
     def clientConnectionFailed(self, connector, reason):
         logger.info('Connection failed. Reason: %s' % (reason))
@@ -198,7 +198,7 @@ class GaduClientFactory(protocol.ClientFactory):
             self.config.exportLoop = None
         if reactor.running:
             reactor.stop()
-            sys.exit(0)
+            os._exit(1)
 
 class SunshineConnection(telepathy.server.Connection,
         telepathy.server.ConnectionInterfaceRequests,
@@ -253,6 +253,7 @@ class SunshineConnection(telepathy.server.Connection,
             self.profile.onLoginFailure = self.on_loginFailed
             self.profile.onContactStatusChange = self.on_updateContact
             self.profile.onMessageReceived = self.on_messageReceived
+            self.profile.onTypingNotification = self.onTypingNotification
             self.profile.onXmlAction = self.onXmlAction
             self.profile.onXmlEvent = self.onXmlEvent
             self.profile.onUserData = self.onUserData
@@ -644,11 +645,12 @@ class SunshineConnection(telepathy.server.Connection,
 
             if msg.content.html_message:
                 #we need to strip all html tags
-                text = stripHTML(msg.content.html_message).replace('&lt;', '<').replace('&gt;', '>')
+                text = unescape(stripHTML(msg.content.html_message))
             else:
-                text = (msg.content.plain_message).decode('windows-1250')
+                text = unescape((msg.content.plain_message).decode('windows-1250'))
 
-            message = "%s" % unicode(str(text).replace('\x00', '').replace('\r', '').decode('UTF-8'))
+
+            message = "%s" % unicode(str(text).replace('\x00', '').replace('\r', ''))
             #print 'message: ', message
             channel.Received(self._recv_id, timestamp, ahandle, type, 0, message)
             self._recv_id += 1
@@ -688,6 +690,25 @@ class SunshineConnection(telepathy.server.Connection,
             #print 'message: ', message
             channel.Received(self._recv_id, timestamp, handle, type, 0, message)
             self._recv_id += 1
+            
+    def onTypingNotification(self, data):
+        logger.info("TypingNotification uin=%d, type=%d" % (data.uin, data.type))
+        
+        handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT,
+                                  str(data.uin))
+        if handle_id != 0:
+            handle = self.handle(telepathy.constants.HANDLE_TYPE_CONTACT, handle_id)
+
+            props = self._generate_props(telepathy.CHANNEL_TYPE_TEXT,
+                    handle, False)
+            channel = self._channel_manager.channel_for_props(props,
+                    signal=True, conversation=None)
+            
+            if type == 0:
+                channel.ChatStateChanged(handle, telepathy.CHANNEL_CHAT_STATE_PAUSED)
+            elif type >= 1:
+                channel.ChatStateChanged(handle, telepathy.CHANNEL_CHAT_STATE_COMPOSING)
+                reactor.callLater(3, channel.ChatStateChanged, handle, telepathy.CHANNEL_CHAT_STATE_PAUSED)
 
     def onXmlAction(self, xml):
         logger.info("XmlAction: %s" % xml.data)

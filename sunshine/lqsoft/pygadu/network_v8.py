@@ -105,7 +105,7 @@ class LoginPacket(GaduPacket):
     login_hash      = StringField(3, length=64)
     status          = UIntField(4, default=0x02)
     flags           = UIntField(5, default=0x03)
-    features        = UIntField(6, default=0x637)
+    features        = UIntField(6, default=0x2637)
     local_ip        = IntField(7)
     local_port      = ShortField(8)
     external_ip     = IntField(9)
@@ -234,3 +234,17 @@ class UserDataPacket(GaduPacket):
     type		= IntField(0)
     num                 = IntField(1)
     users		= ArrayField(2, length='num', subfield=StructField(0, struct=StructUserDataUser))
+
+#
+# GG_TYPING_NOTIFY packets
+#
+@inpacket(0x59)
+@outpacket(0x59)
+class TypingNotifyPacket(GaduPacket):
+    TYPE = Enum({
+        'START':        0x01,
+        'PAUSE':        0x05,
+        'STOP':         0x00
+    })
+    type        = ShortField(0)
+    uin         = IntField(1)

@@ -227,7 +227,7 @@ class SunshineConnection(telepathy.server.Connection,
             'server' : '91.197.13.67',
             'port' : 8074,
             'export-contacts' : False,
-            'use-ssl' : False,
+            'use-ssl' : True,
             'use-specified-server' : False
             }
 

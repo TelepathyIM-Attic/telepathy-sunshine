@@ -30,8 +30,8 @@ except ImportError:
     proper_twisted = False
 
 try:
-    import oauth as oauth
-    test_oauth = oauth.OAuthSignatureMethod_HMAC_SHA1()
+    from OAuth import OAuthToken, OAuthRequest, OAuthConsumer, OAuthSignatureMethod_HMAC_SHA1
+    test_oauth = OAuthSignatureMethod_HMAC_SHA1()
     oauth_loaded = True
 except:
     logger.info("oAuth module can't be loaded")
@@ -101,9 +101,9 @@ class GG_Oauth(object):
         
         self.agent = Agent(reactor)
         
-        self.consumer = oauth.OAuthConsumer(self.uin, self.password)
+        self.consumer = OAuthConsumer(self.uin, self.password)
         
-        self._signature_method = oauth.OAuthSignatureMethod_HMAC_SHA1()
+        self._signature_method = OAuthSignatureMethod_HMAC_SHA1()
         
     def getContentType(self, filename):
         return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
@@ -142,7 +142,7 @@ class GG_Oauth(object):
         url = str(PUT_AVATAR_URL % self.uin)
         #print url
         
-        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=self.access_token, http_method='PUT', http_url=url) # create an oauth request
+        oauth_request = OAuthRequest.from_consumer_and_token(self.consumer, token=self.access_token, http_method='PUT', http_url=url) # create an oauth request
         oauth_request.sign_request(self._signature_method, self.consumer, self.access_token) # the request knows how to generate a signature
         auth_header = oauth_request.to_header()
         
@@ -181,13 +181,13 @@ class GG_Oauth(object):
     def accessTokenReceived(self, result, oauth_token):
         print 'accessTokenReceived: ', result
         content = json.loads(result)['result']
-        oauth_access_token = oauth.OAuthToken(content['oauth_token'], content['oauth_token_secret'])
+        oauth_access_token = OAuthToken(content['oauth_token'], content['oauth_token_secret'])
         
         #url = str(PUT_AVATAR_URL % content['uin'])
         url = 'http://api.gadu-gadu.pl/users/5120225.xml'
         print url
         
-        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=oauth_access_token, http_method='GET', http_url=url) # create an oauth request
+        oauth_request = OAuthRequest.from_consumer_and_token(self.consumer, token=oauth_access_token, http_method='GET', http_url=url) # create an oauth request
         oauth_request.sign_request(self._signature_method, self.consumer, oauth_access_token) # the request knows how to generate a signature
         auth_header = oauth_request.to_header()
 
@@ -213,7 +213,7 @@ class GG_Oauth(object):
         #print 'accessTokenReceived: ', result
         content = json.loads(result)['result']
         
-        self.access_token = oauth.OAuthToken(content['oauth_token'], content['oauth_token_secret'])
+        self.access_token = OAuthToken(content['oauth_token'], content['oauth_token_secret'])
         self.expire_token = time.time()+36000
         
     def requestAccessToken(self, response, oauth_token):
@@ -235,7 +235,7 @@ class GG_Oauth(object):
         #print 'Response phrase:', result.phrase
         #print 'Response headers:'
         #print pformat(list(result.headers.getAllRawHeaders()))
-        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=oauth_token, http_method='POST', http_url=ACCESS_TOKEN_URL) # create an oauth request
+        oauth_request = OAuthRequest.from_consumer_and_token(self.consumer, token=oauth_token, http_method='POST', http_url=ACCESS_TOKEN_URL) # create an oauth request
         oauth_request.sign_request(self._signature_method, self.consumer, oauth_token) # the request knows how to generate a signature
         auth_header = oauth_request.to_header()
         
@@ -271,7 +271,7 @@ class GG_Oauth(object):
     def cbRequestTokenSuccess(self, result):
         content = json.loads(result)['result']
         
-        oauth_token = oauth.OAuthToken(content['oauth_token'], content['oauth_token_secret'])
+        oauth_token = OAuthToken(content['oauth_token'], content['oauth_token_secret'])
         
         postvars = 'callback_url=http://www.mojageneracja.pl&request_token=%s&uin=%s&password=%s' % (oauth_token.key, self.uin, self.password)
         
@@ -299,7 +299,7 @@ class GG_Oauth(object):
         #print 'cbShutdown: ', ignored
         
     def requestToken(self):
-        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, http_method='POST', http_url=REQUEST_TOKEN_URL) # create an oauth request
+        oauth_request = OAuthRequest.from_consumer_and_token(self.consumer, http_method='POST', http_url=REQUEST_TOKEN_URL) # create an oauth request
         #oauth_request.set_parameter('oauth_timestamp', int(time.time())-3600)
         oauth_request.sign_request(self._signature_method, self.consumer, None) # the request knows how to generate a signature
         auth_header = oauth_request.to_header()

@@ -375,6 +375,7 @@ class SunshineConnection(telepathy.server.Connection,
         self.profile.disconnect()
         #if reactor.running:
         #    reactor.stop()
+        os._exit(1)
 
     def GetInterfaces(self):
         return self._interfaces

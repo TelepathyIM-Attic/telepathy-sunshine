@@ -681,7 +681,7 @@ class SunshineConnection(telepathy.server.Connection,
 
             if msg.content.html_message:
                 #we need to strip all html tags
-                text = unescape(stripHTML(msg.content.html_message))
+                text = unescape(stripHTML(msg.content.html_message.replace('<br>', '\n')))
             else:
                 text = unescape((msg.content.plain_message).decode('windows-1250'))
 

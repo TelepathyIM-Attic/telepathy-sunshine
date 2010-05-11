@@ -75,8 +75,8 @@ class GaduProfile(object):
 
     def addContact(self, contact):
         if self.__contacts.has_key(contact.uin):
-            raise ValueError("Contact with UIN %d already exists." % contact.uin)
-        
+            #raise ValueError("Contact with UIN %d already exists." % contact.uin)
+            #now we just leave that contact and go to next one
         self.__contacts[contact.uin] = contact
         if self.connected:
             self.setNotifyState(contact.uin, contact.notify_flags)
@@ -242,9 +242,7 @@ class Def(object):
 def mkdef(*args):
     return Def(*args)
 
-
 class FlatXMLObject(object):
-
     def __init__(self, **kwargs):
         for (k, v) in self.SCHEMA.iteritems():
             if v.required and not kwargs.has_key(k):

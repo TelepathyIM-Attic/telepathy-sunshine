@@ -74,12 +74,14 @@ class GaduProfile(object):
         self.__connection.loseConnection()
 
     def addContact(self, contact):
-        if self.__contacts.has_key(contact.uin):
+        #if self.__contacts.has_key(contact.uin):
             #raise ValueError("Contact with UIN %d already exists." % contact.uin)
             #now we just leave that contact and go to next one
-        self.__contacts[contact.uin] = contact
-        if self.connected:
-            self.setNotifyState(contact.uin, contact.notify_flags)
+            #pass
+        if not self.__contacts.has_key(contact.uin):
+            self.__contacts[contact.uin] = contact
+            if self.connected:
+                self.setNotifyState(contact.uin, contact.notify_flags)
 
     def removeContact(self, contact, notify=False):
         if self.__contacts.has_key(contact.uin):

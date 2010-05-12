@@ -102,6 +102,5 @@ class SunshineConfig(object):
 
     def save_self_alias(self, alias):
         file = open(self.path2, "w")
-        file.w
-        rite(alias)
+        file.write(alias)
         file.close()

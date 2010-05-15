@@ -80,3 +80,5 @@
 /sunshine/lqsoft/oauth.pyc
 /.project
 /.pydevproject
+/.settings/org.eclipse.core.resources.prefs
+/sunshine/util/config.pyc

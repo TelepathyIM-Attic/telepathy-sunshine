@@ -30,7 +30,7 @@ class StructStatus(CStruct):
     flags           = IntField(2)
     remote_ip       = IntField(3)
     remote_port     = ShortField(4)
-    image_size      = ByteField(5)
+    image_size      = UByteField(5)
     reserved01      = ByteField(6)
     reserved02      = IntField(7)
     description     = VarcharField(8)

@@ -40,7 +40,7 @@ class SunshineContacts(telepathy.server.ConnectionInterfaceContacts):
         telepathy.CONNECTION_INTERFACE_AVATARS : 'token',
         telepathy.CONNECTION_INTERFACE_CAPABILITIES : 'caps',
         telepathy.CONNECTION_INTERFACE_CONTACT_CAPABILITIES : 'capabilities',
-        CONNECTION_INTERFACE_CONTACT_INFO : 'contact-info'
+        CONNECTION_INTERFACE_CONTACT_INFO : 'info'
         }
 
     def __init__(self):

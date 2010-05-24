@@ -6,6 +6,8 @@ from twisted.internet.protocol import Protocol
 from twisted.web.http_headers import Headers
 from twisted.internet.defer import succeed
 
+#from twisted.python import log
+
 from twisted.internet import task
 
 from twisted.web.client import getPage
@@ -45,6 +47,7 @@ REQUEST_TOKEN_URL = 'http://api.gadu-gadu.pl/request_token'
 ACCESS_TOKEN_URL = 'http://api.gadu-gadu.pl/access_token'
 AUTHORIZE_TOKEN_URL = 'http://login.gadu-gadu.pl/authorize'
 PUT_AVATAR_URL = 'http://api.gadu-gadu.pl/avatars/%s/0.xml'
+GET_INFO_URL = 'http://api.gadu-gadu.pl/users/%s.json'
 
 def check_requirements():
     if proper_twisted == True and oauth_loaded == True:
@@ -104,7 +107,100 @@ class GG_Oauth(object):
         self.consumer = oauth.OAuthConsumer(self.uin, self.password)
         
         self._signature_method = oauth.OAuthSignatureMethod_HMAC_SHA1()
+
+    #
+    # REQUESTING TOKEN
+    #
+
+    def requestToken(self):
+        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, http_method='POST', http_url=REQUEST_TOKEN_URL) # create an oauth request
+        oauth_request.sign_request(self._signature_method, self.consumer, None) # the request knows how to generate a signature
+        auth_header = oauth_request.to_header()
+	headers = {}
+        headers['Authorization'] = [auth_header['Authorization']]
+        headers['Accept'] = ['application/json']
+        headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
+        headers['Host'] = ['api.gadu-gadu.pl']
+	headers['Content-Length'] = [0]
+        headers = Headers(headers)
         
+        url = REQUEST_TOKEN_URL
+        
+        d = self.agent.request(
+            'POST',
+            REQUEST_TOKEN_URL,
+            headers,
+            None)
+        
+        d.addCallback(self.cbRequestToken)
+        d.addErrback(self.cbShutdown)
+
+    def cbRequestToken(self, response):
+        finished = Deferred()
+        response.deliverBody(BeginningPrinter(finished))
+        finished.addCallback(self.cbRequestTokenSuccess)
+        finished.addErrback(self.cbShutdown)
+        return finished
+
+    def cbRequestTokenSuccess(self, result):
+        content = json.loads(result)['result']
+
+        oauth_token = oauth.OAuthToken(content['oauth_token'], content['oauth_token_secret'])
+
+        postvars = 'callback_url=http://www.mojageneracja.pl&request_token=%s&uin=%s&password=%s' % (oauth_token.key, self.uin, self.password)
+
+        headers = {}
+        headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
+        headers['Accept'] = ['*/*']
+        headers['Content-Type'] = ['application/x-www-form-urlencoded']
+
+        headers = Headers(headers)
+
+        body = StringProducer(str(postvars))
+
+        d = self.agent.request(
+            'POST',
+            AUTHORIZE_TOKEN_URL,
+            headers,
+            body)
+
+        d.addCallback(self.cbTokenAuthorised, oauth_token)
+        d.addErrback(self.cbShutdown)
+
+    def cbTokenAuthorised(self, result, oauth_token):
+        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=oauth_token, http_method='POST', http_url=ACCESS_TOKEN_URL) # create an oauth request
+        oauth_request.sign_request(self._signature_method, self.consumer, oauth_token) # the request knows how to generate a signature
+        auth_header = oauth_request.to_header()
+
+        headers = {}
+        headers['Authorization'] = [auth_header['Authorization']]
+        headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
+        headers['Accept'] = ['application/json']
+	headers['Content-Length'] = [0]
+        headers = Headers(headers)
+
+        d = self.agent.request(
+            'POST',
+            ACCESS_TOKEN_URL,
+            headers,
+            None)
+
+        d.addCallback(self.requestAccessToken, oauth_token)
+        d.addErrback(self.cbShutdown)
+
+    def requestAccessToken(self, response, oauth_token):
+        finished = Deferred()
+        response.deliverBody(BeginningPrinter(finished))
+        finished.addCallback(self.accessTokenReceived, oauth_token)
+        finished.addErrback(self.cbShutdown)
+        return finished
+
+    def accessTokenReceived(self, result, oauth_token):
+        content = json.loads(result)['result']
+
+        self.access_token = oauth.OAuthToken(content['oauth_token'], content['oauth_token_secret'])
+        self.expire_token = time.time()+36000
+
     def getContentType(self, filename):
         return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
@@ -140,8 +236,7 @@ class GG_Oauth(object):
         
     def putAvatar(self, data, ext):
         url = str(PUT_AVATAR_URL % self.uin)
-        #print url
-        
+
         oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=self.access_token, http_method='PUT', http_url=url) # create an oauth request
         oauth_request.sign_request(self._signature_method, self.consumer, self.access_token) # the request knows how to generate a signature
         auth_header = oauth_request.to_header()
@@ -169,165 +264,60 @@ class GG_Oauth(object):
         d.addErrback(self.cbShutdown)
         
     def putAvatarSuccess(self, response):
-        #print 'putAvatarSuccess: ', response
-        #print 'Response version:', response.version
-        #print 'Response code:', response.code
-        #print 'Response phrase:', response.phrase
-        #print 'Response headers:'
-        #print pformat(list(response.headers.getAllRawHeaders()))
         logger.info("New avatar should be uploaded now.")
+    
+    def fetchUserInfo(self, uin):
+        url = str(GET_INFO_URL % self.uin)
         
-        """
-    def accessTokenReceived(self, result, oauth_token):
-        print 'accessTokenReceived: ', result
-        content = json.loads(result)['result']
-        oauth_access_token = oauth.OAuthToken(content['oauth_token'], content['oauth_token_secret'])
-        
-        #url = str(PUT_AVATAR_URL % content['uin'])
-        url = 'http://api.gadu-gadu.pl/users/5120225.xml'
-        print url
-        
-        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=oauth_access_token, http_method='GET', http_url=url) # create an oauth request
-        oauth_request.sign_request(self._signature_method, self.consumer, oauth_access_token) # the request knows how to generate a signature
+        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=self.access_token, http_method='GET', http_url=url) # create an oauth request
+        oauth_request.sign_request(self._signature_method, self.consumer, self.access_token) # the request knows how to generate a signature
         auth_header = oauth_request.to_header()
-
+        
         headers = {}
+        #headers['Connection'] = ['keep-alive']
         headers['Authorization'] = [auth_header['Authorization']]
         headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
         headers['Accept'] = ['*/*']
-        headers['Host'] = ['api.gadu-gadu.pl']
-        #headers['Content-Type'] = ['multipart/form-data; boundary=%s' % boundary]
-        headers['Content-Length'] = [0]
         headers = Headers(headers)
+        
         d = self.agent.request(
             'GET',
-            'http://api.gadu-gadu.pl/users/5120225.xml',
+            url,
             headers,
             None)
         
-        d.addCallback(self.putAvatarSuccess)
-        d.addErrback(self.cbShutdown)
-        """
-        
-    def accessTokenReceived(self, result, oauth_token):
-        #print 'accessTokenReceived: ', result
-        content = json.loads(result)['result']
-        
-        self.access_token = oauth.OAuthToken(content['oauth_token'], content['oauth_token_secret'])
-        self.expire_token = time.time()+36000
-        
-    def requestAccessToken(self, response, oauth_token):
-        #print 'Response version:', response.version
-        #print 'Response code:', response.code
-        #print 'Response phrase:', response.phrase
-        #print 'Response headers:'
-        #print pformat(list(response.headers.getAllRawHeaders()))
-        finished = Deferred()
-        response.deliverBody(BeginningPrinter(finished))
-        finished.addCallback(self.accessTokenReceived, oauth_token)
-        finished.addErrback(self.cbShutdown)
-        return finished
-      
-    def cbTokenAuthorised(self, result, oauth_token):
-        #print 'tokenAuthorised: ', result
-        #print 'Response version:', result.version
-        #print 'Response code:', result.code
-        #print 'Response phrase:', result.phrase
-        #print 'Response headers:'
-        #print pformat(list(result.headers.getAllRawHeaders()))
-        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=oauth_token, http_method='POST', http_url=ACCESS_TOKEN_URL) # create an oauth request
-        oauth_request.sign_request(self._signature_method, self.consumer, oauth_token) # the request knows how to generate a signature
-        auth_header = oauth_request.to_header()
-        
-        headers = {}
-        headers['Authorization'] = [auth_header['Authorization']]
-        headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
-        headers['Accept'] = ['application/json']
-        #headers['Content-Type'] = ['application/x-www-form-urlencoded']
-	headers['Content-Length'] = [0]
-        headers = Headers(headers)
-        
-        d = self.agent.request(
-            'POST',
-            ACCESS_TOKEN_URL,
-            headers,
-            None)
-        
-        d.addCallback(self.requestAccessToken, oauth_token)
+        d.addCallback(self.fetchUserInfoSuccess, uin)
         d.addErrback(self.cbShutdown)
         
-    def cbRequestToken(self, response):
-        #print 'Response version:', response.version
-        #print 'Response code:', response.code
-        #print 'Response phrase:', response.phrase
-        #print 'Response headers:'
-        #print pformat(list(response.headers.getAllRawHeaders()))
+    def fetchUserInfoSuccess(self, response, uin):
         finished = Deferred()
         response.deliverBody(BeginningPrinter(finished))
-        finished.addCallback(self.cbRequestTokenSuccess)
+        finished.addCallback(self.onUserInfoRecv, uin)
         finished.addErrback(self.cbShutdown)
         return finished
-        
-    def cbRequestTokenSuccess(self, result):
-        content = json.loads(result)['result']
-        
-        oauth_token = oauth.OAuthToken(content['oauth_token'], content['oauth_token_secret'])
-        
-        postvars = 'callback_url=http://www.mojageneracja.pl&request_token=%s&uin=%s&password=%s' % (oauth_token.key, self.uin, self.password)
-        
-        headers = {}
-        headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
-        headers['Accept'] = ['*/*']
-        headers['Content-Type'] = ['application/x-www-form-urlencoded']
 
-        headers = Headers(headers)
+    def onUserInfoRecv(self, result, uin):
+        content = json.loads(result)['result']
+        self.onUserInfo(uin, content)
         
-        body = StringProducer(str(postvars))
-        
-        d = self.agent.request(
-            'POST',
-            AUTHORIZE_TOKEN_URL,
-            headers,
-            body)
-        
-        d.addCallback(self.cbTokenAuthorised, oauth_token)
-        d.addErrback(self.cbShutdown)
-        
+    def onUserInfo(self, uin, result):
+        pass
+
     def cbShutdown(self, ignored):
-        #reactor.stop()
         logger.info("Something went wrong.")
         #print 'cbShutdown: ', ignored
-        
-    def requestToken(self):
-        oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, http_method='POST', http_url=REQUEST_TOKEN_URL) # create an oauth request
-        #oauth_request.set_parameter('oauth_timestamp', int(time.time())-3600)
-        oauth_request.sign_request(self._signature_method, self.consumer, None) # the request knows how to generate a signature
-        auth_header = oauth_request.to_header()
-	headers = {}
-        headers['Authorization'] = [auth_header['Authorization']]
-        headers['Accept'] = ['application/json']
-        headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
-        headers['Host'] = ['api.gadu-gadu.pl']
-	headers['Content-Length'] = [0]
-        headers = Headers(headers)
-        
-        url = REQUEST_TOKEN_URL
-        
-        d = self.agent.request(
-            'POST',
-            REQUEST_TOKEN_URL,
-            headers,
-            None)
-        
-        d.addCallback(self.cbRequestToken)
-        d.addErrback(self.cbShutdown)
         
     def checkTokenForAvatar(self, data, ext):
         #print 'checkTokenForAvatar'
         if int(time.time()) <= self.expire_token and self.access_token != None:
             self.putAvatar(data, ext)
             self.__loopingcall.stop()
-            
+    
+    def checkTokenForUserInfo(self, uin):
+        if int(time.time()) <= self.expire_token and self.access_token != None:
+            self.fetchUserInfo(uin)
+            self.__loopingcall.stop()
+
     def getToken(self):
         self.requestToken()
             
@@ -338,12 +328,23 @@ class GG_Oauth(object):
             self.requestToken()
             self.__loopingcall = task.LoopingCall(self.checkTokenForAvatar, data, ext)
             self.__loopingcall.start(5.0)
-    
+
+    def getUserInfo(self, uin):
+        if int(time.time()) <= self.expire_token and self.access_token != None:
+            self.fetchUserInfo(uin)
+        else:
+            self.requestToken()
+            self.__loopingcall = task.LoopingCall(self.checkTokenForUserInfo, uin)
+            self.__loopingcall.start(5.0)
+
 #if check_requirements() == True:
 #    gg = GG_Oauth(4634020, 'xxxxxx')
-#    data = open('avatar.png', 'r').read()
-#    ext = mimetypes.guess_extension(mimetypes.guess_type('avatar.png')[0])
-#    gg.uploadAvatar(data, ext)
+    #data = open('avatar.png', 'r').read()
+    #ext = mimetypes.guess_extension(mimetypes.guess_type('avatar.png')[0])
+    #gg.uploadAvatar(data, ext)
+#    gg.getUserInfo('5120225')
 #else:
 #    print 'GG_oAuth_API: Requirements related with Gadu-Gadu oAuth API support not fullfilled. You need twisted-core, twisted-web in version 9.0.0 or greater and python-oauth.'
+
+#log.startLogging(sys.stdout)
 #reactor.run()

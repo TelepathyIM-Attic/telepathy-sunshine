@@ -106,23 +106,9 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
             if not isinstance(avatar, str):
                 avatar = "".join([chr(b) for b in avatar])
                 data = StringIO.StringIO(avatar).getvalue()
-                gg = GG_Oauth(self.profile.uin, self.password)
-                ext = gg.getExtByType(mime_type)
-                gg.uploadAvatar(data, ext)
+                ext = self.ggapi.getExtByType(mime_type)
+                self.ggapi.uploadAvatar(data, ext)
         return str(self.profile.uin).encode("hex")
-#        self._avatar_known = True
-#        if not isinstance(avatar, str):
-#            avatar = "".join([chr(b) for b in avatar])
-#        msn_object = papyon.p2p.MSNObject(self.msn_client.profile,
-#                         len(avatar),
-#                         papyon.p2p.MSNObjectType.DISPLAY_PICTURE,
-#                         hashlib.sha1(avatar).hexdigest() + '.tmp',
-#                         "",
-#                         data=StringIO.StringIO(avatar))
-#        self.msn_client.profile.msn_object = msn_object
-#        avatar_token = msn_object._data_sha.encode("hex")
-#        logger.info("Setting self avatar to %s" % avatar_token)
-#        return avatar_token
 
     def ClearAvatar(self):
         pass

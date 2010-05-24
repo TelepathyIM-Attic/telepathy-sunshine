@@ -29,6 +29,8 @@ from sunshine.util.config import SunshineConfig
 from sunshine.lqsoft.pygadu.twisted_protocol import GaduClient
 from sunshine.lqsoft.pygadu.models import GaduProfile, GaduContact, GaduContactGroup
 
+from sunshine.lqsoft.gaduapi import *
+
 from twisted.internet import reactor, protocol
 from twisted.web.client import getPage
 from twisted.internet import task
@@ -43,6 +45,7 @@ from sunshine.avatars import SunshineAvatars
 from sunshine.handle import SunshineHandleFactory
 from sunshine.capabilities import SunshineCapabilities
 from sunshine.contacts import SunshineContacts
+from sunshine.contacts_info import SunshineContactInfo
 from sunshine.channel_manager import SunshineChannelManager
 from sunshine.util.decorator import async, stripHTML, unescape
 
@@ -112,7 +115,8 @@ class SunshineConnection(telepathy.server.Connection,
         SunshineAliasing,
         SunshineAvatars,
         SunshineCapabilities,
-        SunshineContacts
+        SunshineContacts,
+        SunshineContactInfo
         ):
 
     _secret_parameters = set([
@@ -164,8 +168,6 @@ class SunshineConnection(telepathy.server.Connection,
             self.profile.onXmlEvent = self.onXmlEvent
             self.profile.onUserData = self.onUserData
 
-            self.password = str(parameters['password'])
-
             #lets try to make file with contacts etc ^^
             self.configfile = SunshineConfig(int(parameters['account']))
             self.configfile.check_dirs()
@@ -188,6 +190,8 @@ class SunshineConnection(telepathy.server.Connection,
             logger.info("We have %s contacts in file." % (self.configfile.get_contacts_count()))
             
             self.factory = GaduClientFactory(self.profile)
+            self.ggapi = GG_Oauth(self.profile.uin, parameters['password'])
+            
             self._channel_manager = SunshineChannelManager(self)
 
             self._recv_id = 0
@@ -203,6 +207,7 @@ class SunshineConnection(telepathy.server.Connection,
             SunshineAvatars.__init__(self)
             SunshineContacts.__init__(self)
             SunshineCapabilities.__init__(self)
+            SunshineContactInfo.__init__(self)
             
             self.updateCapabilitiesCalls()
 
@@ -382,7 +387,7 @@ class SunshineConnection(telepathy.server.Connection,
 
     def getServerAdress(self, uin):
         logger.info("Fetching GG server adress.")
-        url = 'http://appmsg.gadu-gadu.pl/appsvc/appmsg_ver10.asp?fmnumber=%s&lastmsg=0&version=10.0.0.10784' % (str(uin))
+        url = 'http://appmsg.gadu-gadu.pl/appsvc/appmsg_ver10.asp?fmnumber=%s&lastmsg=0&version=10.1.1.11119' % (str(uin))
         d = getPage(url, timeout=10)
         d.addCallback(self.on_server_adress_fetched, uin)
         d.addErrback(self.on_server_adress_fetched_failed, uin)
@@ -637,3 +642,7 @@ class SunshineConnection(telepathy.server.Connection,
 
     def onUserData(self, data):
         logger.info("UserData: %s" % str(data))
+        #for user in data.users:
+        #    print user.uin
+        #    for attr in user.attr:
+        #        print "%s - %s" % (attr.name, attr.value)

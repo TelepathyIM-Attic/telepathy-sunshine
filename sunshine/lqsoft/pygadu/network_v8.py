@@ -90,9 +90,9 @@ class StructUserDataAttr(CStruct):
     value		= StringField(4, length='value_size')
 
 class StructUserDataUser(CStruct):
-    uin		= IntField(0)
-    num		= IntField(1)
-    attr		= ArrayField(2, length='num', subfield=StructField(0, struct=StructUserDataAttr))
+    uin		    = IntField(0)
+    num		    = IntField(1)
+    attr	    = ArrayField(2, length='num', subfield=StructField(0, struct=StructUserDataAttr))
 
 #
 # PACKETS
@@ -112,7 +112,7 @@ class LoginPacket(GaduPacket):
     external_port   = ShortField(10)
     image_size      = UByteField(11, default=0xff)
     unknown01       = UByteField(12, default=0x64)
-    version         = VarcharField(13, default="Gadu-Gadu Client build 10.0.0.10450")
+    version         = VarcharField(13, default="Gadu-Gadu Client build 10.1.1.11119")
     description     = VarcharField(14)
 
     def update_hash(self, password, seed):
@@ -235,7 +235,7 @@ RecvMsgAck = outpacket(0x46)(RecvMsgAck)
 #
 class UserDataPacket(GaduPacket):
     type		= IntField(0)
-    num                 = IntField(1)
+    num         = IntField(1)
     users		= ArrayField(2, length='num', subfield=StructField(0, struct=StructUserDataUser))
 UserDataPacket = inpacket(0x44)(UserDataPacket)
 

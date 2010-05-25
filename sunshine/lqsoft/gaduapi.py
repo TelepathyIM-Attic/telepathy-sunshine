@@ -119,7 +119,7 @@ class GG_Oauth(object):
 	headers = {}
         headers['Authorization'] = [auth_header['Authorization']]
         headers['Accept'] = ['application/json']
-        headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
+        headers['User-Agent'] = ['Gadu-Gadu Client, build 10,1,1,11119']
         headers['Host'] = ['api.gadu-gadu.pl']
 	headers['Content-Length'] = [0]
         headers = Headers(headers)
@@ -150,7 +150,7 @@ class GG_Oauth(object):
         postvars = 'callback_url=http://www.mojageneracja.pl&request_token=%s&uin=%s&password=%s' % (oauth_token.key, self.uin, self.password)
 
         headers = {}
-        headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
+        headers['User-Agent'] = ['Gadu-Gadu Client, build 10,1,1,11119']
         headers['Accept'] = ['*/*']
         headers['Content-Type'] = ['application/x-www-form-urlencoded']
 
@@ -174,7 +174,7 @@ class GG_Oauth(object):
 
         headers = {}
         headers['Authorization'] = [auth_header['Authorization']]
-        headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
+        headers['User-Agent'] = ['Gadu-Gadu Client, build 10,1,1,11119']
         headers['Accept'] = ['application/json']
 	headers['Content-Length'] = [0]
         headers = Headers(headers)
@@ -249,7 +249,7 @@ class GG_Oauth(object):
         headers = {}
         #headers['Connection'] = ['keep-alive']
         headers['Authorization'] = [auth_header['Authorization']]
-        headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
+        headers['User-Agent'] = ['Gadu-Gadu Client, build 10,1,1,11119']
         headers['Accept'] = ['*/*']
         headers['Content-Type'] = ['multipart/form-data; boundary=%s' % boundary]
         headers = Headers(headers)
@@ -267,7 +267,7 @@ class GG_Oauth(object):
         logger.info("New avatar should be uploaded now.")
     
     def fetchUserInfo(self, uin):
-        url = str(GET_INFO_URL % self.uin)
+        url = str(GET_INFO_URL % uin)
         
         oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=self.access_token, http_method='GET', http_url=url) # create an oauth request
         oauth_request.sign_request(self._signature_method, self.consumer, self.access_token) # the request knows how to generate a signature
@@ -276,7 +276,7 @@ class GG_Oauth(object):
         headers = {}
         #headers['Connection'] = ['keep-alive']
         headers['Authorization'] = [auth_header['Authorization']]
-        headers['User-Agent'] = ['Gadu-Gadu Client, build 8,0,0,4881']
+        headers['User-Agent'] = ['Gadu-Gadu Client, build 10,1,1,11119']
         headers['Accept'] = ['*/*']
         headers = Headers(headers)
         
@@ -286,27 +286,27 @@ class GG_Oauth(object):
             headers,
             None)
         
-        d.addCallback(self.fetchUserInfoSuccess, uin)
+        d.addCallback(self.fetchUserInfoSuccess)
         d.addErrback(self.cbShutdown)
         
-    def fetchUserInfoSuccess(self, response, uin):
+    def fetchUserInfoSuccess(self, response):
         finished = Deferred()
         response.deliverBody(BeginningPrinter(finished))
-        finished.addCallback(self.onUserInfoRecv, uin)
+        finished.addCallback(self.onUserInfoRecv)
         finished.addErrback(self.cbShutdown)
         return finished
 
-    def onUserInfoRecv(self, result, uin):
+    def onUserInfoRecv(self, result):
         content = json.loads(result)['result']
-        self.onUserInfo(uin, content)
+        self.onUserInfo(content)
         
-    def onUserInfo(self, uin, result):
+    def onUserInfo(self, result):
         pass
-
-    def cbShutdown(self, ignored):
+    
+    def cbShutdown(self, reason):
         logger.info("Something went wrong.")
-        #print 'cbShutdown: ', ignored
-        
+        print 'cbShutdown: ', reason
+    
     def checkTokenForAvatar(self, data, ext):
         #print 'checkTokenForAvatar'
         if int(time.time()) <= self.expire_token and self.access_token != None:
@@ -327,7 +327,7 @@ class GG_Oauth(object):
         else:
             self.requestToken()
             self.__loopingcall = task.LoopingCall(self.checkTokenForAvatar, data, ext)
-            self.__loopingcall.start(5.0)
+            self.__loopingcall.start(1.0)
 
     def getUserInfo(self, uin):
         if int(time.time()) <= self.expire_token and self.access_token != None:
@@ -335,7 +335,7 @@ class GG_Oauth(object):
         else:
             self.requestToken()
             self.__loopingcall = task.LoopingCall(self.checkTokenForUserInfo, uin)
-            self.__loopingcall.start(5.0)
+            self.__loopingcall.start(1.0)
 
 #if check_requirements() == True:
 #    gg = GG_Oauth(4634020, 'xxxxxx')

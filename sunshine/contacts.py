@@ -29,7 +29,7 @@ __all__ = ['SunshineContacts']
 
 logger = logging.getLogger('Sunshine.Contacts')
 
-CONNECTION_INTERFACE_CONTACT_INFO = 'org.freedesktop.Telepathy.Connection.Interface.ContactInfo.DRAFT'
+CONNECTION_INTERFACE_CONTACT_INFO = 'org.freedesktop.Telepathy.Connection.Interface.ContactInfo'
 
 class SunshineContacts(telepathy.server.ConnectionInterfaceContacts):
 

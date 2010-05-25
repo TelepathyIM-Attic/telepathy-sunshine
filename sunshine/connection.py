@@ -44,8 +44,8 @@ from sunshine.aliasing import SunshineAliasing
 from sunshine.avatars import SunshineAvatars
 from sunshine.handle import SunshineHandleFactory
 from sunshine.capabilities import SunshineCapabilities
-from sunshine.contacts import SunshineContacts
 from sunshine.contacts_info import SunshineContactInfo
+from sunshine.contacts import SunshineContacts
 from sunshine.channel_manager import SunshineChannelManager
 from sunshine.util.decorator import async, stripHTML, unescape
 
@@ -115,8 +115,8 @@ class SunshineConnection(telepathy.server.Connection,
         SunshineAliasing,
         SunshineAvatars,
         SunshineCapabilities,
-        SunshineContacts,
-        SunshineContactInfo
+        SunshineContactInfo,
+        SunshineContacts
         ):
 
     _secret_parameters = set([
@@ -205,9 +205,9 @@ class SunshineConnection(telepathy.server.Connection,
             telepathy.server.ConnectionInterfaceRequests.__init__(self)
             SunshinePresence.__init__(self)
             SunshineAvatars.__init__(self)
-            SunshineContacts.__init__(self)
             SunshineCapabilities.__init__(self)
             SunshineContactInfo.__init__(self)
+            SunshineContacts.__init__(self)
             
             self.updateCapabilitiesCalls()
 

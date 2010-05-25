@@ -33,7 +33,7 @@ __all__ = ['SunshineContactInfo']
 
 logger = logging.getLogger('Sunshine.ContactInfo')
 
-CONNECTION_INTERFACE_CONTACT_INFO = 'org.freedesktop.Telepathy.Connection.Interface.ContactInfo.DRAFT'
+CONNECTION_INTERFACE_CONTACT_INFO = 'org.freedesktop.Telepathy.Connection.Interface.ContactInfo'
 
 # Contact_Info_Flag
 CONTACT_INFO_FLAG_CAN_SET = 1
@@ -42,41 +42,46 @@ LAST_CONTACT_INFO_FLAG = 2
 # Contact_Info_Field_Flags (bitfield/set of flags, 0 for none)
 CONTACT_INFO_FIELD_FLAG_PARAMETERS_MANDATORY = 1
 
-class SunshineContactInfo(telepathy.server.DBusProperties, ConnectionInterfaceContactInfo):
+class SunshineContactInfo(ConnectionInterfaceContactInfo):
     def __init__(self):
         logger.info('SunshineContactInfo called.')
-        telepathy.server.DBusProperties.__init__(self)
         ConnectionInterfaceContactInfo.__init__(self)
-        #self._interfaces.remove(CONNECTION_INTERFACE_CONTACT_INFO)
         
-        self._implement_property_get(CONNECTION_INTERFACE_CONTACT_INFO, {
+        self.ggapi.onUserInfo = self.onUserInfo
+        
+        dbus_interface = CONNECTION_INTERFACE_CONTACT_INFO
+        
+        self._implement_property_get(dbus_interface, {
             'ContactInfoFlags': lambda: self.contact_info_flags,
             'SupportedFields': lambda: self.contact_info_supported_fields,
         })
 
     @property
     def contact_info_flags(self):
-        return CONTACT_INFO_FLAG_CAN_SET | CONTACT_INFO_FLAG_PUSH
+        return (CONTACT_INFO_FLAG_CAN_SET | CONTACT_INFO_FLAG_PUSH)
 
     @property
     def contact_info_supported_fields(self):
-        return [
-                  ('nickname', [], 0, 1),
-                  ('fn', [], 0, 1),
-                  ('label', [], 0, 1),
-                  ('bday', [], 0, 1),
-                  ('url', [], 0, 1),
-                  ('url', [], 0, 1),
-                ]
+        return dbus.Array([
+                  ('nickname', ['type=home'], 0, 1),
+                  ('fn', ['type=home'], 0, 1),
+                  ('label', ['type=home'], 0, 1),
+                  ('bday', ['type=home'], 0, 1),
+                  ('url', ['type=home', 'type=mg'], 0, 2)
+                ])
 
     def GetContactInfo(self, contacts):
         logger.info("GetContactInfo")
+        tmp = {}
         for contact in contacts:
-            print contact
-        return []
+            tmp[contact] = []
+        return tmp
 
     def RefreshContactInfo(self, contacts):
         logger.info('RefreshContactInfo')
+        for handle_id in contacts:
+            handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
+            self.ggapi.getUserInfo(str(handle.name))
         pass
         
     def RequestContactInfo(self, contact):
@@ -86,3 +91,39 @@ class SunshineContactInfo(telepathy.server.DBusProperties, ConnectionInterfaceCo
     def SetContactInfo(self, contactinfo):
         logger.info('SetContactInfo')
         pass
+        
+    def onUserInfo(self, result):
+        if 'users' in result:
+            for user in result['users']:
+                if '_uin' in user:
+                    info = []
+                    if 'nick' in user:
+                        if '_content' in user['nick']:
+                            info.append(('nickname', ['type=home'], [user['nick']['_content']]))
+                    if 'name' in user:
+                        if '_content' in user['name']:
+                            fn = user['name']['_content']
+                            if 'surname' in user:
+                                if '_content' in user['surname']:
+                                    fn += ' '+user['surname']['_content']
+                            info.append(('fn', ['type=home'], [fn]))
+                    if 'city' in user:
+                        if '_content' in user['city']:
+                            info.append(('label', ['type=home'], [user['city']['_content']]))
+                    if 'birth' in user:
+                        if '_content' in user['birth']:
+                            info.append(('bday', ['type=home'], [user['birth']['_content'][:-15]]))
+                    if 'hasActiveMGProfile' in user:
+                        if user['hasActiveMGProfile'] == True:
+                            mg = 'https://www.mojageneracja.pl/%s' % (user['_uin'])
+                            info.append(('url', ['type=mg'], [mg]))
+                    if 'wwwUrl' in user:
+                        if '_content' in user['wwwUrl']:
+                            info.append(('url', ['type=home'], [user['wwwUrl']['_content']]))
+
+                    handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT, str(user['_uin']))
+                    handle = self.handle(telepathy.constants.HANDLE_TYPE_CONTACT, handle_id)
+                    self.ContactInfoChanged(handle, info)
+                        
+        
+

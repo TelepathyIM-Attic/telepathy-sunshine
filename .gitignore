@@ -82,3 +82,5 @@
 /.pydevproject
 /.settings/org.eclipse.core.resources.prefs
 /sunshine/util/config.pyc
+/sunshine/contacts_info.pyc
+/sunshine/Connection_Interface_Contact_Info.pyc

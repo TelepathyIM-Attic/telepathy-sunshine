@@ -116,13 +116,23 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
         pass
 
     def getAvatar(self, sender, url):
-        logger.info("getAvatar: %s %s" % (sender, url))
         handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT, str(sender))
         
         if handle_id != 0:
+            handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
+            
+            h = hashlib.new('md5')
+            h.update(handle.name)
+            h.update(url)
+            token = h.hexdigest()
+            
+            self.avatars_urls[handle.name] = {}
+            self.avatars_urls[handle.name]['token'] = token
+            self.avatars_urls[handle.name]['avatar'] = url
+            
             d = getPage(str(url), timeout=20)
-            d.addCallback(self.on_fetch_avatars_ok, str(url), handle_id)
-            d.addErrback(self.on_fetch_avatars_failed, str(url), handle_id)
+            d.addCallback(self.on_fetch_avatars_ok, handle)
+            d.addErrback(self.on_fetch_avatars_failed, handle)
 
     def on_fetch_avatars_file_ok(self, result, url, handle):
         try:

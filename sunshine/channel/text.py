@@ -26,13 +26,15 @@ import telepathy
 
 from sunshine.util.decorator import async, escape
 from sunshine.handle import SunshineHandleFactory
+from sunshine.channel import SunshineChannel
 
 __all__ = ['SunshineTextChannel']
 
 logger = logging.getLogger('Sunshine.TextChannel')
 
 
-class SunshineTextChannel(telepathy.server.ChannelTypeText,
+class SunshineTextChannel(SunshineChannel,
+                          telepathy.server.ChannelTypeText,
                           telepathy.server.ChannelInterfaceChatState):
 
     def __init__(self, conn, manager, conversation, props, object_path=None):
@@ -43,6 +45,7 @@ class SunshineTextChannel(telepathy.server.ChannelTypeText,
 
         self.handle = handle
         telepathy.server.ChannelTypeText.__init__(self, conn, manager, props, object_path=None)
+        SunshineChannel.__init__(self, conn, props)
         telepathy.server.ChannelInterfaceChatState.__init__(self)
 
     def Send(self, message_type, text):

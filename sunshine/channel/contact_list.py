@@ -26,6 +26,7 @@ import xml.etree.ElementTree as ET
 
 from sunshine.util.decorator import async
 from sunshine.handle import SunshineHandleFactory
+from sunshine.channel import SunshineChannel
 
 from sunshine.lqsoft.pygadu.twisted_protocol import GaduClient
 from sunshine.lqsoft.pygadu.models import GaduProfile, GaduContact
@@ -120,6 +121,7 @@ def SunshineContactListChannelFactory(connection, manager, handle, props):
 
 
 class SunshineListChannel(
+        SunshineChannel,
         telepathy.server.ChannelTypeContactList,
         telepathy.server.ChannelInterfaceGroup):
     "Abstract Contact List channels"
@@ -127,6 +129,7 @@ class SunshineListChannel(
     def __init__(self, connection, manager, props, object_path=None):
         self._conn_ref = weakref.ref(connection)
         telepathy.server.ChannelTypeContactList.__init__(self, connection, manager, props, object_path=None)
+        SunshineChannel.__init__(self, connection, props)
         telepathy.server.ChannelInterfaceGroup.__init__(self)
         self._populate(connection)
 

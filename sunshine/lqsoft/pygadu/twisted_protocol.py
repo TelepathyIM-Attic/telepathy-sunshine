@@ -186,16 +186,18 @@ class GaduClient(Protocol):
 
     def exportContactsList(self, xml):
         klass = Resolver.by_name('ULRequestPacket')
-        i = 0
+        #i = 0
         
-        while len(xml) != 0:
-            i = i +1
-            batch, xml = xml[:2048], xml[2048:]
-            if(i == 1):
-                type = ULRequestPacket.TYPE.PUT
-            else:
-                type = ULRequestPacket.TYPE.PUT_MORE
-            self._sendPacket(klass(type = type, data = batch))
+        #while len(xml) != 0:
+        #    i = i +1
+        #    batch, xml = xml[:2048], xml[2048:]
+        #    if(i == 1):
+        #        type = ULRequestPacket.TYPE.PUT
+        #    else:
+        #        type = ULRequestPacket.TYPE.PUT_MORE
+        #    self._sendPacket(klass(type = type, data = batch))
+        
+        self._sendPacket(klass(type = ULRequestPacket.TYPE.PUT, data = xml))
         self._log("All contacts exported.")
 
     def sendPing(self):

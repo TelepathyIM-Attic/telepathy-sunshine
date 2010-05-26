@@ -8,6 +8,8 @@ sunshine_PYTHON = aliasing.py \
 	connection_manager.py \
 	connection.py \
 	contacts.py \
+	Connection_Interface_Contact_Info.py \
+	contacts_info.py \
 	debug.py \
 	handle.py \
 	__init__.py \

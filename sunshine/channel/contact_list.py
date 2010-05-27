@@ -253,8 +253,6 @@ class SunshineSubscribeListChannel(SunshineListChannel):
 
     def _filter_contact(self, contact):
         return (True, False, False)
-        #return (contact.is_member(papyon.Membership.FORWARD) and not
-        #        contact.is_member(papyon.Membership.PENDING), False, False)
 
     #@Lockable(mutex, 'add_subscribe', 'finished_cb')
 #    def _add(self, handle_id, message, finished_cb):

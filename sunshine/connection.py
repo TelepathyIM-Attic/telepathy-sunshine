@@ -277,12 +277,16 @@ class SunshineConnection(telepathy.server.Connection,
             if self.profile.exportLoop:
                 self.profile.exportLoop.stop()
                 self.profile.exportLoop = None
-                
-        logger.info("Disconnecting")
+        
+        #if self._status == telepathy.CONNECTION_STATUS_DISCONNECTED:
+        #    self.profile.disconnect()
+        #    self.factory.disconnect()
+        
         self.StatusChanged(telepathy.CONNECTION_STATUS_DISCONNECTED,
                 telepathy.CONNECTION_STATUS_REASON_REQUESTED)
         self.profile.disconnect()
-        os._exit(1)
+
+        logger.info("Disconnecting")
 
     def GetInterfaces(self):
         return self._interfaces
@@ -420,8 +424,11 @@ class SunshineConnection(telepathy.server.Connection,
             self.getServerAdress(uin)
 
     def on_server_adress_fetched_failed(self, error, uin):
-        logger.info("Failed to get page with server IP adress.")
-        self.getServerAdress(uin)
+        logger.error("Failed to get page with server IP adress.")
+        self.StatusChanged(telepathy.CONNECTION_STATUS_DISCONNECTED,
+                telepathy.CONNECTION_STATUS_REASON_NETWORK_ERROR)
+        self._manager.disconnected(self)
+        #self.factory.disconnect()
 
     def on_contactsImported(self):
         logger.info("No contacts in the XML contacts file yet. Contacts imported.")

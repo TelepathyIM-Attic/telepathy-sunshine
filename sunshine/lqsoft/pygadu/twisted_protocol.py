@@ -16,6 +16,7 @@ class GaduClient(Protocol):
     
     def __init__(self, profile):
         self.user_profile = profile # the user connected to this client
+        self.user_profile.handler = self
         self.doLogin = Deferred()
         self.doLogin.addCallbacks(profile._creditials, self._onInvalidCreditials)
         self.doLogin.addCallbacks(self._doLogin, self._onLoginFailed)

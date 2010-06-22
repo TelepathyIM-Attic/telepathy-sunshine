@@ -16,6 +16,7 @@ class GaduProfile(object):
         self.__contacts = {}
         self.__groups = {}
         self.__connection = None
+        self.handler = None
         self.contactsLoop = None
         self.exportLoop = None
         
@@ -71,7 +72,8 @@ class GaduProfile(object):
         return self.__connection is not None
 
     def disconnect(self):
-        self.__connection.loseConnection()
+        print 'Protocol disconnecting'
+        self.handler.transport.loseConnection()
 
     def addContact(self, contact):
         #if self.__contacts.has_key(contact.uin):
@@ -171,9 +173,6 @@ class GaduProfile(object):
     def _flushContacts(self):
         self.__contacts = {}
         self.__groups = {}
-
-    def disconnect(self):
-        self.__connection.transport.loseConnection()
 
     # stuff that should be implemented by user
     def onCreditialsNeeded(self, *args, **kwargs):

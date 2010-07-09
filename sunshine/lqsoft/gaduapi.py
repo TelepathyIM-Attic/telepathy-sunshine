@@ -336,6 +336,17 @@ class GG_Oauth(object):
             self.requestToken()
             self.__loopingcall = task.LoopingCall(self.checkTokenForUserInfo, uin)
             self.__loopingcall.start(1.0)
+            
+    def getUserInfoDeffered(self, uin):
+        d = Deferred()
+        if int(time.time()) <= self.expire_token and self.access_token != None:
+            d.addCallback(self.onUserInfoRecv)
+            d.addErrback(self.cbShutdown)
+        else:
+            self.requestToken()
+            self.__loopingcall = task.LoopingCall(self.checkTokenForUserInfo, uin)
+            self.__loopingcall.start(1.0)
+        return d
 
 #if check_requirements() == True:
 #    gg = GG_Oauth(4634020, 'xxxxxx')

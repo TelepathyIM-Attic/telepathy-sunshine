@@ -26,6 +26,8 @@ import telepathy
 import telepathy.constants
 import telepathy.errors
 
+from twisted.internet.defer import Deferred
+
 from sunshine.handle import SunshineHandleFactory
 from sunshine.util.decorator import async
 
@@ -83,10 +85,22 @@ class SunshineContactInfo(ConnectionInterfaceContactInfo):
             handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
             self.ggapi.getUserInfo(str(handle.name))
         pass
-        
-    def RequestContactInfo(self, contact):
+    
+    @dbus.service.method(CONNECTION_INTERFACE_CONTACT_INFO, in_signature='u', out_signature='a(sasas)',
+                         async_callbacks=('reply_handler', 'error_handler'))
+    def RequestContactInfo(self, contact, reply_handler, error_handler):
         logger.info('RequestContactInfo')
-        pass
+        handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, contact)
+        self.ggapi.getUserInfo(str(handle.name))
+        #TODO: This need to be fixed as soon as possible.
+        #d = Deferred()
+        #d = self.ggapi.getUserInfoDeffered(str(handle.name))
+        #d.addCallbacks(reply_handler, error_handler)
+        #d.callback(result)
+        #print 'result:', result
+        #return d
+        reply_handler([])
+        return []
         
     def SetContactInfo(self, contactinfo):
         logger.info('SetContactInfo')

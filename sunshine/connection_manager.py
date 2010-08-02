@@ -84,6 +84,7 @@ class SunshineConnectionManager(telepathy.server.ConnectionManager):
 
     def quit(self):
         "Terminates all connections. Must be called upon quit"
-        for connection in self._connections:
+        conns = self._connections.copy()
+        for connection in conns:
             connection.Disconnect()
         logger.info("Connection manager quitting")

@@ -26,6 +26,8 @@ import xml.etree.ElementTree as ET
 
 from sunshine.lqsoft.pygadu.models import GaduProfile, GaduContact, GaduContactGroup
 
+from twisted.internet import reactor
+
 from sunshine.util.decorator import async
 from sunshine.handle import SunshineHandleFactory
 from sunshine.channel.contact_list import SunshineListChannel
@@ -87,7 +89,7 @@ class SunshineGroupChannel(SunshineListChannel):
             group = self._handle.group
 
             self.add_contact_to_group(group, contact, contact_handle)
-
+        reactor.callLater(3.0, self._conn_ref().exportContactsFile)
 
     def RemoveMembers(self, contacts, message):
         for contact_handle_id in contacts:
@@ -100,63 +102,12 @@ class SunshineGroupChannel(SunshineListChannel):
             group = self._handle.group
 
             self.delete_contact_from_group(group, contact, contact_handle)
+        reactor.callLater(3.0, self._conn.exportContactsFile)
+        
 
     def Close(self):
         logger.debug("Deleting group %s" % self._handle.name)
         del self.conn.profile.groups[self._handle.name]
-#        ab = self._conn.msn_client.address_book
-#        group = self._handle.group
-#        ab.delete_group(group)
-
-#    def _filter_contact(self, contact):
-#        if contact.is_member(papyon.Membership.FORWARD):
-#            for group in contact.groups:
-#                if group.name.decode("utf-8") == self._handle.name:
-#                    return (True, False, False)
-#        return (False, False, False)
-#
-#    def on_addressbook_group_added(self, group):
-#        if group.name.decode("utf-8") == self._handle.name:
-#            self.AddMembers(self.__pending_add, None)
-#            self.__pending_add = []
-#            self.RemoveMembers(self.__pending_remove, None)
-#            self.__pending_remove = []
-#
-#    def on_addressbook_group_deleted(self, group):
-#        if group.name.decode("utf-8") == self._handle.name:
-#            self.Closed()
-#            self._conn.remove_channel(self)
-#
-#    def on_addressbook_group_contact_added(self, group, contact):
-#        group_name = group.name.decode("utf-8")
-#        if group_name == self._handle.name:
-#            handle = ButterflyHandleFactory(self._conn_ref(), 'contact',
-#                    contact.account, contact.network_id)
-#
-#            added = set()
-#            added.add(handle)
-#
-#            self.MembersChanged('', added, (), (), (), 0,
-#                    telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
-#
-#            logger.debug("Contact %s added to group %s" %
-#                    (handle.name, group_name))
-#
-#    def on_addressbook_group_contact_deleted(self, group, contact):
-#        group_name = group.name.decode("utf-8")
-#        if group_name == self._handle.name:
-#            handle = ButterflyHandleFactory(self._conn_ref(), 'contact',
-#                    contact.account, contact.network_id)
-#
-#            removed = set()
-#            removed.add(handle)
-#
-#            self.MembersChanged('', (), removed, (), (), 0,
-#                    telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
-#
-#            logger.debug("Contact %s removed from group %s" %
-#                    (handle.name, group_name))
-#
 
     @async
     def add_contact_to_group(self, group, contact, contact_handle):

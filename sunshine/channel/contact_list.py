@@ -101,7 +101,7 @@ def SunshineContactListChannelFactory(connection, manager, handle, props):
         props[telepathy.CHANNEL_INTERFACE + '.TargetHandleType'],
         props[telepathy.CHANNEL_INTERFACE + '.TargetHandle'])
 
-    if handle.get_name() == 'subscribe':
+    if handle.get_name() == 'stored':
         channel_class = SunshineSubscribeListChannel
     #hacky & tricky
 #    elif handle.get_name() == 'publish':
@@ -136,40 +136,6 @@ class SunshineListChannel(
     def GetLocalPendingMembersWithInfo(self):
         return []
 
-    # papyon.event.AddressBookEventInterface
-    def on_addressbook_contact_added(self, contact):
-        added = set()
-        local_pending = set()
-        remote_pending = set()
-
-        ad, lp, rp = self._filter_contact(contact)
-        if ad or lp or rp:
-            handle = ButterflyHandleFactory(self._conn_ref(), 'contact',
-                contact.account, contact.network_id)
-            if ad: added.add(handle)
-            if lp: local_pending.add(handle)
-            if rp: remote_pending.add(handle)
-            msg = contact.attributes.get('invite_message', '')
-            self.MembersChanged(msg, added, (), local_pending, remote_pending, 0,
-                    telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
-
-    # papyon.event.AddressBookEventInterface
-    def on_addressbook_contact_deleted(self, contact):
-        handle = ButterflyHandleFactory(self._conn_ref(), 'contact',
-                contact.account, contact.network_id)
-        ad, lp, rp = self._filter_contact(contact)
-        if self._contains_handle(handle) and not ad:
-            self.MembersChanged('', (), [handle], (), (), 0,
-                    telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
-
-    # papyon.event.AddressBookEventInterface
-    def on_addressbook_contact_blocked(self, contact):
-        pass
-
-    # papyon.event.AddressBookEventInterface
-    def on_addressbook_contact_unblocked(self, contact):
-        pass
-
     @async
     def _populate(self, connection):
         added = set()
@@ -177,7 +143,6 @@ class SunshineListChannel(
         remote_pending = set()
 
         for contact in connection.gadu_client.contacts:
-            #logger.info("New contact %s, name: %s added." % (contact.uin, contact.ShowName))
             ad, lp, rp = self._filter_contact(contact)
             if ad or lp or rp:
                 handle = SunshineHandleFactory(self._conn_ref(), 'contact',
@@ -187,8 +152,6 @@ class SunshineListChannel(
                 if ad: added.add(handle)
                 if lp: local_pending.add(handle)
                 if rp: remote_pending.add(handle)
-        #self._conn_ref()._populate_capabilities()
-        #capabilities for self handle
         self._conn_ref().contactAdded(self._conn_ref().GetSelfHandle())
         self.MembersChanged('', added, (), local_pending, remote_pending, 0,
                 telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
@@ -225,7 +188,6 @@ class SunshineSubscribeListChannel(SunshineListChannel):
             ET.SubElement(contact_xml, "Groups")
             c = GaduContact.from_xml(contact_xml)
             self._conn_ref().gadu_client.addContact( c )
-            #config.addNewContact( c )
             self._conn_ref().gadu_client.notifyAboutContact( c )
             logger.info("Adding contact: %s" % (handle.name))
             self.MembersChanged('', [handle], (), (), (), 0,
@@ -237,146 +199,20 @@ class SunshineSubscribeListChannel(SunshineListChannel):
             #and group
             if self._conn_ref().pending_contacts_to_group.has_key(handle.name):
                 logger.info("Trying to add temporary group.")
-                #print str(self._conn_ref().pending_contacts_to_group)
-                #print str(self._conn_ref().pending_contacts_to_group[handle.name])
                 handle.contact.updateGroups(self._conn_ref().pending_contacts_to_group[handle.name])
             self._conn_ref().contactAdded(handle)
             logger.info("Contact added.")
+        self._conn_ref().exportContactsFile()
 
     def RemoveMembers(self, contacts, message):
         for h in contacts:
-	    handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, h)
-	    contact = handle.contact
-	    self._conn_ref().gadu_client.removeContact(contact, notify=True)
+            handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, h)
+            contact = handle.contact
+            self._conn_ref().gadu_client.removeContact(contact, notify=True)
             self.MembersChanged('', (), [handle], (), (), 0,
                     telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
+        self._conn_ref().exportContactsFile()
 
     def _filter_contact(self, contact):
         return (True, False, False)
 
-    #@Lockable(mutex, 'add_subscribe', 'finished_cb')
-#    def _add(self, handle_id, message, finished_cb):
-#        logger.info("Subscribe - Add Members called.")
-#        handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
-#        if handle.contact is not None and \
-#           handle.contact.is_member(papyon.Membership.FORWARD):
-#            return True
-#
-#        account = handle.account
-#        network = handle.network
-#        groups = list(handle.pending_groups)
-#        handle.pending_groups = set()
-#        ab = self._conn.msn_client.address_book
-#        ab.add_messenger_contact(account,
-#                network_id=network,
-#                auto_allow=False,
-#                invite_message=message.encode('utf-8'),
-#                groups=groups,
-#                done_cb=(finished_cb,),
-#                failed_cb=(finished_cb,))
-
-    @Lockable(mutex, 'rem_subscribe', 'finished_cb')
-    def _remove(self, handle_id, finished_cb):
-        handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
-        contact = handle.contact
-        if contact is None or not contact.is_member(papyon.Membership.FORWARD):
-            return True
-        ab = self._conn.msn_client.address_book
-        ab.delete_contact(contact, done_cb=(finished_cb,),
-                failed_cb=(finished_cb,))
-
-    # papyon.event.ContactEventInterface
-    def on_contact_memberships_changed(self, contact):
-        handle = ButterflyHandleFactory(self._conn_ref(), 'contact',
-                contact.account, contact.network_id)
-        if contact.is_member(papyon.Membership.FORWARD):
-            self.MembersChanged('', [handle], (), (), (), 0,
-                    telepathy.CHANNEL_GROUP_CHANGE_REASON_INVITED)
-            if len(handle.pending_groups) > 0:
-                ab = self._conn.msn_client.address_book
-                for group in handle.pending_groups:
-                    ab.add_contact_to_group(group, contact)
-                handle.pending_groups = set()
-
-#
-#class ButterflyPublishListChannel(ButterflyListChannel,
-#        papyon.event.ContactEventInterface):
-#
-#    def __init__(self, connection, manager, props):
-#        ButterflyListChannel.__init__(self, connection, manager, props)
-#        papyon.event.ContactEventInterface.__init__(self, connection.msn_client)
-#        self.GroupFlagsChanged(0, 0)
-#
-#    def AddMembers(self, contacts, message):
-#        for handle_id in contacts:
-#            self._add(handle_id, message)
-#
-#    def RemoveMembers(self, contacts, message):
-#        for handle_id in contacts:
-#            self._remove(handle_id)
-#
-#    def GetLocalPendingMembersWithInfo(self):
-#        result = []
-#        for contact in self._conn.msn_client.address_book.contacts:
-#            if not contact.is_member(papyon.Membership.PENDING):
-#                continue
-#            handle = ButterflyHandleFactory(self._conn_ref(), 'contact',
-#                    contact.account, contact.network_id)
-#            result.append((handle, handle,
-#                    telepathy.CHANNEL_GROUP_CHANGE_REASON_INVITED,
-#                    contact.attributes.get('invite_message', '')))
-#        return result
-#
-#    def _filter_contact(self, contact):
-#        return (contact.is_member(papyon.Membership.ALLOW),
-#                contact.is_member(papyon.Membership.PENDING),
-#                False)
-#
-#    @Lockable(mutex, 'add_publish', 'finished_cb')
-#    def _add(self, handle_id, message, finished_cb):
-#        handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
-#        contact = handle.contact
-#        if contact is not None and contact.is_member(papyon.Membership.ALLOW):
-#            return True
-#
-#        account = handle.account
-#        network = handle.network
-#        ab = self._conn.msn_client.address_book
-#        if contact is not None and contact.is_member(papyon.Membership.PENDING):
-#            ab.accept_contact_invitation(contact, False,
-#                    done_cb=(finished_cb,), failed_cb=(finished_cb,))
-#        else:
-#            ab.allow_contact(account, network,
-#                    done_cb=(finished_cb,), failed_cb=(finished_cb,))
-#
-#    @Lockable(mutex, 'rem_publish', 'finished_cb')
-#    def _remove(self, handle_id, finished_cb):
-#        handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
-#        contact = handle.contact
-#        ab = self._conn.msn_client.address_book
-#        if contact.is_member(papyon.Membership.PENDING):
-#            ab.decline_contact_invitation(contact, False, done_cb=finished_cb,
-#                    failed_cb=finished_cb)
-#        elif contact.is_member(papyon.Membership.ALLOW):
-#            ab.disallow_contact(contact, done_cb=(finished_cb,),
-#                    failed_cb=(finished_cb,))
-#        else:
-#            return True
-#
-#    # papyon.event.ContactEventInterface
-#    def on_contact_memberships_changed(self, contact):
-#        handle = ButterflyHandleFactory(self._conn_ref(), 'contact',
-#                contact.account, contact.network_id)
-#        if self._contains_handle(handle):
-#            if contact.is_member(papyon.Membership.PENDING):
-#                # Nothing worth our attention
-#                return
-#
-#            if contact.is_member(papyon.Membership.ALLOW):
-#                # Contact accepted
-#                self.MembersChanged('', [handle], (), (), (), 0,
-#                        telepathy.CHANNEL_GROUP_CHANGE_REASON_INVITED)
-#            else:
-#                # Contact rejected
-#                self.MembersChanged('', (), [handle], (), (), 0,
-#                        telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)

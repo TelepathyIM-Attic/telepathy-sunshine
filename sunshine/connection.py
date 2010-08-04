@@ -24,6 +24,11 @@ import logging
 
 import xml.etree.ElementTree as ET
 
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
+
 from sunshine.util.config import SunshineConfig
 
 from sunshine.lqsoft.pygadu.twisted_protocol import GaduClient
@@ -236,14 +241,6 @@ class SunshineConnection(telepathy.server.Connection,
                 self.getServerAdress(self._account[0])
 
     def Disconnect(self):
-        #if self.profile.contactsLoop:
-        #    self.profile.contactsLoop.stop()
-        #    self.profile.contactsLoop = None
-        #if self._export_contacts == True:
-        #    if self.profile.exportLoop:
-        #        self.profile.exportLoop.stop()
-        #        self.profile.exportLoop = None
-        
         self.StatusChanged(telepathy.CONNECTION_STATUS_DISCONNECTED,
                 telepathy.CONNECTION_STATUS_REASON_REQUESTED)
         self.profile.disconnect()
@@ -319,24 +316,25 @@ class SunshineConnection(telepathy.server.Connection,
         _success(channel._object_path)
         self.signal_new_channels([channel])
 
-    def updateContactsFile(self):
-        """Method that updates contact file when it changes and in loop every 5 seconds."""
-        return self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
-
+    @async
     def exportContactsFile(self):
-        logger.info("Exporting contacts.")
-        print "self.profile.groups:", self.profile.groups
-        print "self.profile.contacts:", self.profile.contacts
-        contacts_xml = self.updateContactsFile()
-        print "contacts_xml:", contacts_xml
+        contacts_xml = self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
+        output = StringIO.StringIO()
+
+        contacts_xml.write(output, encoding="UTF-8")
+
+        contents = output.getvalue()
+        output.close()
         
-        if len(contacts_xml) != 0:
-            self.profile.exportContacts(contacts_xml)
+        if len(ET.tostring(contacts_xml.getroot())) != 0:
+            logger.info("Exporting contacts.")
+            print 'Output:', str(contents)
+            self.profile.exportContacts(str(contents))
 
     @async
     def makeTelepathyContactsChannel(self):
         logger.debug("Method makeTelepathyContactsChannel called.")
-        handle = SunshineHandleFactory(self, 'list', 'stored')
+        handle = SunshineHandleFactory(self, 'list', 'subscribe')
         props = self._generate_props(telepathy.CHANNEL_TYPE_CONTACT_LIST,
             handle, False)
         self._channel_manager.channel_for_props(props, signal=True)

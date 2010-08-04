@@ -47,10 +47,9 @@ class SunshineConfig(object):
             ET.SubElement(contact_avatars_xml, "URL").text = ""
             ET.SubElement(contact_xml, "FlagNormal").text = "true"
 
-        #main_xml = ET.ElementTree(contactbook_xml)
+        main_xml = ET.ElementTree(contactbook_xml)
         if self.contacts_len >= 0 and self.groups_len >= 0:
-            #main_xml.write(self.path, encoding="UTF-8")
-            return "%s\n%s" % ("<?xml version='1.0' encoding='UTF-8'?>", ET.tostring(contactbook_xml))
+            return main_xml
 
     def get_contacts_count(self):
         return self.contacts_count

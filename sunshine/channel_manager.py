@@ -125,25 +125,7 @@ class SunshineChannelManager(telepathy.server.ChannelManager):
 #              telepathy.CHANNEL_TYPE_STREAMED_MEDIA + '.InitialVideo'])
 #            ]
 #        self.implement_channel_classes(telepathy.CHANNEL_TYPE_STREAMED_MEDIA, self._get_media_channel, classes)
-#
-#        fixed = {telepathy.CHANNEL_INTERFACE + '.ChannelType': telepathy.CHANNEL_TYPE_TEXT,
-#            telepathy.CHANNEL_INTERFACE + '.TargetHandleType': dbus.UInt32(telepathy.HANDLE_TYPE_CONTACT)}
-#        self._implement_channel_class(telepathy.CHANNEL_TYPE_TEXT,
-#            self._get_text_channel, fixed, [])
-#
-#        fixed = {telepathy.CHANNEL_INTERFACE + '.ChannelType': telepathy.CHANNEL_TYPE_TEXT,
-#            telepathy.CHANNEL_INTERFACE + '.TargetHandleType': dbus.UInt32(telepathy.HANDLE_TYPE_ROOM)}
-#        self._implement_channel_class(telepathy.CHANNEL_TYPE_TEXT,
-#            self._get_text_channel, fixed, [])
-#
-#        fixed = {telepathy.CHANNEL_INTERFACE + '.ChannelType': telepathy.CHANNEL_TYPE_CONTACT_LIST}
-#        self._implement_channel_class(telepathy.CHANNEL_TYPE_CONTACT_LIST,
-#            self._get_list_channel, fixed, [])
 
-#        fixed = {telepathy.CHANNEL_INTERFACE + '.ChannelType': telepathy.CHANNEL_TYPE_STREAMED_MEDIA,
-#            telepathy.CHANNEL_INTERFACE + '.TargetHandleType': dbus.UInt32(telepathy.HANDLE_TYPE_CONTACT)}
-#        self._implement_channel_class(telepathy.CHANNEL_TYPE_STREAMED_MEDIA,
-#            self._get_media_channel, fixed, [telepathy.CHANNEL_INTERFACE + '.TargetHandle'])
     def _get_list_channel(self, props):
         _, surpress_handler, handle = self._get_type_requested_handle(props)
 
@@ -156,18 +138,6 @@ class SunshineChannelManager(telepathy.server.ChannelManager):
             channel = SunshineContactListChannelFactory(self._conn,
                 self, handle, props)
         return channel
-    
-#    def _get_list_channel(self, props):
-#        _, surpress_handler, handle = self._get_type_requested_handle(props)
-#
-#        if handle.get_type() == telepathy.HANDLE_TYPE_GROUP:
-#            channel = SunshineGroupChannel(self._conn, self, props)
-#            logger.debug('New group channel')
-#        else:
-#            channel = SunshineContactListChannelFactory(self._conn,
-#                self, handle, props)
-#            logger.debug('New contact list channel: %s' % (handle.name))
-#        return channel
 
     def _get_text_channel(self, props, conversation=None):
         _, surpress_handler, handle = self._get_type_requested_handle(props)

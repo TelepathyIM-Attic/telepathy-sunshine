@@ -21,12 +21,15 @@
 import logging
 import weakref
 import time
+import dbus
 
 import telepathy
 
 from sunshine.util.decorator import async, escape
 from sunshine.handle import SunshineHandleFactory
 from sunshine.channel import SunshineChannel
+from telepathy._generated.Channel_Interface_Messages import ChannelInterfaceMessages
+from telepathy.interfaces import CHANNEL_INTERFACE_MESSAGES
 
 __all__ = ['SunshineTextChannel']
 
@@ -35,18 +38,35 @@ logger = logging.getLogger('Sunshine.TextChannel')
 
 class SunshineTextChannel(SunshineChannel,
                           telepathy.server.ChannelTypeText,
-                          telepathy.server.ChannelInterfaceChatState):
+                          telepathy.server.ChannelInterfaceChatState,
+                          ChannelInterfaceMessages):
 
     def __init__(self, conn, manager, conversation, props, object_path=None):
         _, surpress_handler, handle = manager._get_type_requested_handle(props)
         self._recv_id = 0
         self._conn_ref = weakref.ref(conn)
         self.conn = conn
+        
+        self._pending_messages2 = {}
 
         self.handle = handle
         telepathy.server.ChannelTypeText.__init__(self, conn, manager, props, object_path=None)
         SunshineChannel.__init__(self, conn, props)
         telepathy.server.ChannelInterfaceChatState.__init__(self)
+        ChannelInterfaceMessages.__init__(self)
+
+        self._implement_property_get(CHANNEL_INTERFACE_MESSAGES, {
+            'SupportedContentTypes': lambda: ["text/plain"],
+            'MessagePartSupportFlags': lambda: 1,
+            'DeliveryReportingSupport': lambda: 0,
+            'PendingMessages': lambda: dbus.Array(self._pending_messages2.values(), signature='aa{sv}')
+            })
+
+        self._add_immutables({
+            'SupportedContentTypes': CHANNEL_INTERFACE_MESSAGES,
+            'MessagePartSupportFlags': CHANNEL_INTERFACE_MESSAGES,
+            'DeliveryReportingSupport': CHANNEL_INTERFACE_MESSAGES,
+            })
 
     def Send(self, message_type, text):
         if message_type == telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL:
@@ -56,9 +76,9 @@ class SunshineTextChannel(SunshineChannel,
             gg_text = text.decode('UTF-8', 'xmlcharrefreplace').replace('<', '&lt;').replace('>', '&gt;')
             self._conn_ref().profile.sendTo(int(self.handle.name), str(gg_text), str(msg))
             self._conn_ref().profile.sendTypingNotify(int(self.handle.name), 0)
+            self.signalTextSent(int(time.time()), message_type, text)
         else:
             raise telepathy.NotImplemented("Unhandled message type")
-        self.Sent(int(time.time()), message_type, text)
 
     def Close(self):
         telepathy.server.ChannelTypeText.Close(self)
@@ -69,21 +89,26 @@ class SunshineTextChannel(SunshineChannel,
     def GetSelfHandle(self):
         return self._conn.GetSelfHandle()
 
-    # Rededefine AcknowledgePendingMessages to remove offline messages
-    # from the oim box.
     def AcknowledgePendingMessages(self, ids):
-        telepathy.server.ChannelTypeText.AcknowledgePendingMessages(self, ids)
-#        messages = []
-#        for id in ids:
-#            if id in self._pending_offline_messages.keys():
-#                messages.append(self._pending_offline_messages[id])
-#                del self._pending_offline_messages[id]
-#        self._oim_box_ref().delete_messages(messages)
+        for id in ids:
+            if id in self._pending_messages2:
+                del self._pending_messages2[id]
 
-    # Rededefine ListPendingMessages to remove offline messages
-    # from the oim box.
+        telepathy.server.ChannelTypeText.AcknowledgePendingMessages(self, ids)
+        self.PendingMessagesRemoved(ids)
+
     def ListPendingMessages(self, clear):
+        if clear:
+            ids = self._pending_messages2.keys()
+            self._pending_messages2 = {}
+            self.PendingMessagesRemoved(ids)
+
         return telepathy.server.ChannelTypeText.ListPendingMessages(self, clear)
+
+    @dbus.service.signal(telepathy.CHANNEL_INTERFACE_MESSAGES, signature='aa{sv}')
+    def MessageReceived(self, message):
+        id = message[0]['pending-message-id']
+        self._pending_messages2[id] = dbus.Array(message, signature='a{sv}')
 
     def SetChatState(self, state):
         # Not useful if we dont have a conversation.
@@ -95,6 +120,34 @@ class SunshineTextChannel(SunshineChannel,
         handle = SunshineHandleFactory(self._conn_ref(), 'self')
         self._conn_ref().profile.sendTypingNotify(int(self.handle.name), t)
         self.ChatStateChanged(handle, state)
+
+    def signalTextSent(self, timestamp, message_type, text):
+        headers = {'message-sent' : timestamp,
+                   'message-type' : message_type
+                  }
+        body = {'content-type': 'text/plain',
+                'content': text
+               }
+        message = [headers, body]
+        self.Sent(timestamp, message_type, text)
+        self.MessageSent(message, 0, '')
+
+    def signalTextReceived(self, id, timestamp, sender, type, flags, sender_nick, text):
+        self.Received(id, timestamp, sender, type, flags, text)
+        headers = dbus.Dictionary({dbus.String('message-received') : dbus.UInt64(timestamp),
+                   dbus.String('pending-message-id') : dbus.UInt32(id),
+                   dbus.String('message-sender') : dbus.UInt32(sender),
+                   dbus.String('message-type') : dbus.UInt32(type)
+                  }, signature='sv')
+
+        if sender_nick not in (None, ''):
+            headers[dbus.String('sender-nickname')] = dbus.String(sender_nick)
+
+        body = dbus.Dictionary({dbus.String('content-type'): dbus.String('text/plain'),
+                dbus.String('content'): dbus.String(text)
+               }, signature='sv')
+        message = dbus.Array([headers, body], signature='a{sv}')
+        self.MessageReceived(message)
 
 class SunshineRoomTextChannel(telepathy.server.ChannelTypeText, telepathy.server.ChannelInterfaceGroup):
 
@@ -136,21 +189,11 @@ class SunshineRoomTextChannel(telepathy.server.ChannelTypeText, telepathy.server
         telepathy.server.ChannelTypeText.Close(self)
         self.remove_from_connection()
 
-    # Redefine GetSelfHandle since we use our own handle
-    #  as Butterfly doesn't have channel specific handles
     def GetSelfHandle(self):
         return self._conn.GetSelfHandle()
 
-    # Rededefine AcknowledgePendingMessages to remove offline messages
-    # from the oim box.
     def AcknowledgePendingMessages(self, ids):
         telepathy.server.ChannelTypeText.AcknowledgePendingMessages(self, ids)
-#        messages = []
-#        for id in ids:
-#            if id in self._pending_offline_messages.keys():
-#                messages.append(self._pending_offline_messages[id])
-#                del self._pending_offline_messages[id]
-#        self._oim_box_ref().delete_messages(messages)
 
     def ListPendingMessages(self, clear):
         return telepathy.server.ChannelTypeText.ListPendingMessages(self, clear)
@@ -158,9 +201,5 @@ class SunshineRoomTextChannel(telepathy.server.ChannelTypeText, telepathy.server
     def getContacts(self, contacts):
         self.contacts = contacts
 
-#        if clear:
-#            messages = self._pending_offline_messages.values()
-#            self._oim_box_ref().delete_messages(messages)
-#        return telepathy.server.ChannelTypeText.ListPendingMessages(self, clear)
 
 

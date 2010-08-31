@@ -123,13 +123,15 @@ class SunshineConnection(telepathy.server.Connection,
             'server' : 's',
             'port' : 'q',
             'use-ssl' : 'b',
-            'use-specified-server' : 'b'
+            'use-specified-server' : 'b',
+            'synchronise-contacts-with-server' : 'b'
             }
     _parameter_defaults = {
             'server' : '91.197.13.67',
             'port' : 8074,
             'use-ssl' : True,
-            'use-specified-server' : False
+            'use-specified-server' : False,
+            'synchronise-contacts-with-server' : True
             }
 
     def __init__(self, manager, parameters):
@@ -144,6 +146,7 @@ class SunshineConnection(telepathy.server.Connection,
             self.param_server = (parameters['server'], parameters['port'])
             self.param_use_ssl = bool(parameters['use-ssl'])
             self.param_specified_server = bool(parameters['use-specified-server'])
+            self.param_synchronisation = bool(parameters['synchronise-contacts-with-server'])
 
             self.profile = GaduProfile(uin= int(parameters['account']) )
             self.profile.uin = int(parameters['account'])
@@ -159,6 +162,27 @@ class SunshineConnection(telepathy.server.Connection,
             self.profile.onUserData = self.onUserData
 
             self.configfile = SunshineConfig(int(parameters['account']))
+            self.configfile.check_dirs()
+            #lets get contacts from contacts config file
+            contacts_list = self.configfile.get_contacts()
+
+            for contact_from_list in contacts_list['contacts']:
+                c = GaduContact.from_xml(contact_from_list)
+                try:
+                    c.uin
+                    if self.param_synchronisation:
+                        self.profile.connection.addNewContact(c)
+                    else:
+                        self.profile.addContact(c)
+                except:
+                    pass
+
+            for group_from_list in contacts_list['groups']:
+                g = GaduContactGroup.from_xml(group_from_list)
+                if g.Name:
+                    self.profile.addGroup(g)
+            
+            logger.info("We have %s contacts in file." % (self.configfile.get_contacts_count()))
             
             self.factory = GaduClientFactory(self.profile)
             self.ggapi = GG_Oauth(self.profile.uin, parameters['password'])
@@ -321,6 +345,8 @@ class SunshineConnection(telepathy.server.Connection,
         contents = output.getvalue()
         output.close()
         
+        reactor.callLater(1, self.configfile.make_contacts_file, self.profile.groups, self.profile.contacts, True)
+        
         if len(ET.tostring(contacts_xml.getroot())) != 0:
             logger.info("Exporting contacts.")
             print 'Output:', str(contents)
@@ -397,11 +423,23 @@ class SunshineConnection(telepathy.server.Connection,
         self._status = telepathy.CONNECTION_STATUS_CONNECTED
         self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
                 telepathy.CONNECTION_STATUS_REASON_REQUESTED)
+        
+        reactor.callLater(1, self.configfile.make_contacts_file, self.profile.groups, self.profile.contacts, True)
 
     def on_loginSuccess(self):
         logger.info("Connected")
-
-        self.profile.importContacts(self.on_contactsImported)
+        
+        if self.param_synchronisation == False and self.configfile.get_contacts_count() == 0:
+            self.profile.importContacts(self.on_contactsImported)
+        elif self.param_synchronisation == True:
+            self.profile.importContacts(self.on_contactsImported)
+        else:
+            self.makeTelepathyContactsChannel()
+            self.makeTelepathyGroupChannels()
+            
+            self._status = telepathy.CONNECTION_STATUS_CONNECTED
+            self.StatusChanged(telepathy.CONNECTION_STATUS_CONNECTED,
+                    telepathy.CONNECTION_STATUS_REASON_REQUESTED)
 
     def on_loginFailed(self, response):
         logger.info("Login failed: ", response)

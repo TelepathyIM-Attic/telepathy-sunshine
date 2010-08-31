@@ -67,6 +67,10 @@ class GaduProfile(object):
 
     # high-level interface
     @property
+    def connection(self):
+        return self.__connection
+
+    @property
     def connected(self):
         """Is the profile currently used in an active connection"""
         return self.__connection is not None

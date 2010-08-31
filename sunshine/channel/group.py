@@ -102,7 +102,7 @@ class SunshineGroupChannel(SunshineListChannel):
             group = self._handle.group
 
             self.delete_contact_from_group(group, contact, contact_handle)
-        reactor.callLater(3.0, self._conn.exportContactsFile)
+        reactor.callLater(3.0, self._conn_ref().exportContactsFile)
         
 
     def Close(self):

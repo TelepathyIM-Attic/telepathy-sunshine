@@ -190,7 +190,8 @@ class SunshineConnection(telepathy.server.Connection,
             logger.info("We have %s contacts in file." % (self.configfile.get_contacts_count()))
             
             self.factory = GaduClientFactory(self.profile)
-            self.ggapi = GG_Oauth(self.profile.uin, parameters['password'])
+            if check_requirements() == True:
+                self.ggapi = GG_Oauth(self.profile.uin, parameters['password'])
             
             self._channel_manager = SunshineChannelManager(self)
 
@@ -206,7 +207,8 @@ class SunshineConnection(telepathy.server.Connection,
             SunshinePresence.__init__(self)
             SunshineAvatars.__init__(self)
             SunshineCapabilities.__init__(self)
-            SunshineContactInfo.__init__(self)
+            if check_requirements() == True:
+                SunshineContactInfo.__init__(self)
             SunshineContacts.__init__(self)
             
             self.updateCapabilitiesCalls()

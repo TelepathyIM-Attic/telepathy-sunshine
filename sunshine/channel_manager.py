@@ -92,12 +92,6 @@ class SunshineChannelManager(telepathy.server.ChannelManager):
 
             ({telepathy.CHANNEL_INTERFACE + '.ChannelType': telepathy.CHANNEL_TYPE_TEXT,
               telepathy.CHANNEL_INTERFACE + '.TargetHandleType': dbus.UInt32(telepathy.HANDLE_TYPE_ROOM)},
-#             [
-#              CHANNEL_INTERFACE_CONFERENCE + '.InitialChannels',
-#              CHANNEL_INTERFACE_CONFERENCE + '.InitialInviteeHandles',
-#              CHANNEL_INTERFACE_CONFERENCE + '.InitialInviteeIDs',
-#              CHANNEL_INTERFACE_CONFERENCE + '.InitialMessage',
-#              CHANNEL_INTERFACE_CONFERENCE + '.SupportsNonMerges']
              [telepathy.CHANNEL_INTERFACE + '.TargetHandle',
               telepathy.CHANNEL_INTERFACE + '.TargetID']),
             ]

@@ -37,7 +37,7 @@ logger = logging.getLogger('Sunshine.GroupChannel')
 
 class SunshineGroupChannel(SunshineListChannel):
 
-    def __init__(self, connection, manager, props, object_path=None):
+    def __init__(self, connection, manager, props, object_path):
         self.__pending_add = []
         self.__pending_remove = []
         self.conn = connection

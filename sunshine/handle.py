@@ -95,7 +95,7 @@ class SunshineSelfHandle(SunshineHandle):
 
 class SunshineContactHandle(SunshineHandle):
     #TODO: GG using just UIN to indenrify user so we need just contact_uin instead of contact_account and contact_network)
-    def __init__(self, connection, id, contact_account, contact_network):
+    def __init__(self, connection, id, contact_account, contact_network=None):
         handle_type = telepathy.HANDLE_TYPE_CONTACT
         handle_name = str(contact_account)
         self.account = str(contact_account)

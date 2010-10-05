@@ -6,6 +6,7 @@ import signal
 import os
 import sys
 import logging
+from twisted.python import log
 
 from twisted.internet import gtk2reactor
 gtk2reactor.install()
@@ -30,6 +31,8 @@ from sunshine import SunshineDebug
 from sunshine.util.decorator import async
 
 logger = logging.getLogger('Sunshine')
+observer = log.PythonLoggingObserver(loggerName='Sunshine')
+observer.start()
 
 IDLE_TIMEOUT = 5000
 PROCESS_NAME = 'telepathy-sunshine'

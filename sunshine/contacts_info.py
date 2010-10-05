@@ -26,7 +26,7 @@ import telepathy
 import telepathy.constants
 import telepathy.errors
 
-from twisted.internet.defer import Deferred
+from twisted.internet import defer
 
 from sunshine.handle import SunshineHandleFactory
 from sunshine.util.decorator import async

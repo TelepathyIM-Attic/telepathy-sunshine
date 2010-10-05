@@ -52,6 +52,8 @@ from sunshine.util.decorator import async, stripHTML, unescape
 __all__ = ['GaduClientFactory', 'SunshineConnection']
 
 logger = logging.getLogger('Sunshine.Connection')
+observer = log.PythonLoggingObserver(loggerName='Sunshine.Connection')
+observer.start()
 
 #SSL
 ssl_support = False
@@ -485,8 +487,9 @@ class SunshineConnection(telepathy.server.Connection,
                 telepathy.CONNECTION_STATUS_REASON_AUTHENTICATION_FAILED)
         reactor.stop()
 
-    @async
+    #@async
     def on_updateContact(self, contact):
+        #handle = SunshineHandleFactory(self, 'contact', str(contact.uin))
         handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT, str(contact.uin))
         handle = self.handle(telepathy.constants.HANDLE_TYPE_CONTACT, handle_id)
         logger.info("Method on_updateContact called, status changed for UIN: %s, id: %s, status: %s, description: %s" % (contact.uin, handle.id, contact.status, contact.get_desc()))

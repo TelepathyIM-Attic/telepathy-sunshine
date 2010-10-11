@@ -72,9 +72,9 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
         result = {}
         for handle_id in contacts:
             handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
-            if handle == self.GetSelfHandle():
-                #tutaj kiedys trzeba napisac kod odp za naszego avatara
-                result[handle] = ""
+            #if handle == self.GetSelfHandle():
+            #    #tutaj kiedys trzeba napisac kod odp za naszego avatara
+            #    result[handle] = ""
             """
             else:
                 contact = handle.contact

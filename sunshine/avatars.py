@@ -75,20 +75,6 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
             #if handle == self.GetSelfHandle():
             #    #tutaj kiedys trzeba napisac kod odp za naszego avatara
             #    result[handle] = ""
-            """
-            else:
-                contact = handle.contact
-
-                if contact is not None:
-                    av_token = str(handle.name)
-                else:
-                    av_token = None
-    
-                if av_token is not None:
-                    result[handle] = av_token
-                elif self._avatar_known:
-                    result[handle] = ""
-            """
             url = 'http://api.gadu-gadu.pl/avatars/%s/0.xml' % (str(handle.name))
             d = getPage(url, timeout=10)
             d.addCallback(self.on_fetch_avatars_file_ok, url, handle)
@@ -160,7 +146,7 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
         logger.info("Avatar file can't be retrieved from %s, error: %s" % (url, error.getErrorMessage()))
 
     def on_fetch_avatars_ok(self, result, handle):
-        #try:
+        try:
             logger.info("Avatar retrieved for %s" % (handle.name))
             type = imghdr.what('', result)
             if type is None: type = 'jpeg'
@@ -169,8 +155,8 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
             token = self.avatars_urls[handle.name]['token']
             
             self.AvatarRetrieved(handle, token, avatar, 'image/' + type)
-        #except:
-        #    logger.debug("Avatar retrieved but something went wrong.")
+        except:
+            logger.debug("Avatar retrieved but something went wrong.")
 
     def on_fetch_avatars_failed(self, error, handle):
         logger.debug("Avatar not retrieved, error: %s" % (error.getErrorMessage()))

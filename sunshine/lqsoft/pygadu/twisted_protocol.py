@@ -142,6 +142,8 @@ class GaduClient(Protocol):
     def _handleStatusNoticiesPacket(self, msg):
         print 'Server sent - noticies packet'
         self.user_profile.onStatusNoticiesRecv()
+        print repr(msg)
+        print repr(msg.contacts)
         for struct in msg.contacts:
             self.user_profile._updateContact(struct)
 

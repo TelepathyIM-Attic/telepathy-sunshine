@@ -145,6 +145,7 @@ class GaduClient(Protocol):
         print repr(msg)
         print repr(msg.contacts)
         for struct in msg.contacts:
+            print struct
             self.user_profile._updateContact(struct)
 
     def _handleMessageInPacket(self, msg):

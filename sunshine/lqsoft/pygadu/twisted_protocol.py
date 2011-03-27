@@ -276,6 +276,8 @@ class GaduClient(Protocol):
     def changeStatus(self, status, desc=''):
         change_status_class = Resolver.by_name('ChangeStatusPacket')
 
+        print ChangeStatusPacket.STATUS.FFC
+
         if status == 'NOT_AVAILABLE':
             if desc == '' or desc == None:
                 gg_status = change_status_class.STATUS.NOT_AVAILABLE

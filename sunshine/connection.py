@@ -251,7 +251,7 @@ class SunshineConnection(telepathy.server.Connection,
         return self._interfaces
 
     def RequestHandles(self, handle_type, names, sender):
-        logger.info("Request handles called, handle type: %s, names: %s" % (str(handle_type), str(names)))
+        logger.info("Method RequestHandles called, handle type: %s, names: %s" % (str(handle_type), str(names)))
         self.check_connected()
         self.check_handle_type(handle_type)
         
@@ -265,8 +265,13 @@ class SunshineConnection(telepathy.server.Connection,
                 except:
                     raise InvalidHandle
                 
-                handle = SunshineHandleFactory(self, 'contact',
-                        str(contact_name), None)
+                handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT, str(contact_name))
+
+                if handle_id != 0:
+                    handle = self.handle(telepathy.constants.HANDLE_TYPE_CONTACT, handle_id)
+                else:
+                    handle = SunshineHandleFactory(self, 'contact',
+                            str(contact_name), None)
             elif handle_type == telepathy.HANDLE_TYPE_ROOM:
                 handle = SunshineHandleFactory(self, 'room', name)
             elif handle_type == telepathy.HANDLE_TYPE_LIST:
@@ -328,7 +333,7 @@ class SunshineConnection(telepathy.server.Connection,
 
     @async
     def makeTelepathyContactsChannel(self):
-        logger.debug("Creating contact list channels.")
+        logger.debug("Method makeTelepathyContactsChannel called.")
         handle = SunshineHandleFactory(self, 'list', 'subscribe')
         props = self._generate_props(telepathy.CHANNEL_TYPE_CONTACT_LIST,
             handle, False)
@@ -336,7 +341,7 @@ class SunshineConnection(telepathy.server.Connection,
 
     @async
     def makeTelepathyGroupChannels(self):
-        logger.debug("Creating group channels.")
+        logger.debug("Method makeTelepathyGroupChannels called.")
         for group in self.profile.groups:
             handle = SunshineHandleFactory(self, 'group',
                     group.Name)
@@ -344,7 +349,6 @@ class SunshineConnection(telepathy.server.Connection,
                 telepathy.CHANNEL_TYPE_CONTACT_LIST, handle, False)
             self._channel_manager.channel_for_props(props, signal=True)
 
-    @async
     def getServerAdress(self, uin):
         logger.info("Fetching GG server adress.")
         url = 'http://appmsg.gadu-gadu.pl/appsvc/appmsg_ver10.asp?fmnumber=%s&lastmsg=0&version=10.1.1.11119' % (str(uin))
@@ -352,7 +356,6 @@ class SunshineConnection(telepathy.server.Connection,
         d.addCallback(self.on_server_adress_fetched, uin)
         d.addErrback(self.on_server_adress_fetched_failed, uin)
 
-    @async
     def makeConnection(self, ip, port):
         logger.info("%s %s %s" % (ip, port, self.param_use_ssl))
         if ssl_support and self.param_use_ssl:
@@ -361,7 +364,6 @@ class SunshineConnection(telepathy.server.Connection,
         else:
             reactor.connectTCP(ip, port, self.factory)
 
-    @async
     def on_server_adress_fetched(self, result, uin):
         try:
             result = result.replace('\n', '')
@@ -414,7 +416,7 @@ class SunshineConnection(telepathy.server.Connection,
     def on_updateContact(self, contact):
         handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT, str(contact.uin))
         handle = self.handle(telepathy.constants.HANDLE_TYPE_CONTACT, handle_id)
-        logger.info("Status changed for UIN: %s, id: %s, status: %s, description: '%s'" % (contact.uin, handle.id, contact.status, contact.get_desc()))
+        logger.info("Method on_updateContact called, status changed for UIN: %s, id: %s, status: %s, description: %s" % (contact.uin, handle.id, contact.status, contact.get_desc()))
         self._presence_changed(handle, contact.status, contact.get_desc())
 
     #@async

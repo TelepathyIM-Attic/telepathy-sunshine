@@ -595,7 +595,7 @@ class SunshineConnection(telepathy.server.Connection,
 
             message = "%s" % unicode(str(text).replace('\x00', '').replace('\r', ''))
 
-            channel.Received(self._recv_id, timestamp, handle, type, 0, message)
+            channel.signalTextReceived(self._recv_id, timestamp, handle, type, 0, handle.name, message)
             self._recv_id += 1
             
     def onTypingNotification(self, data):

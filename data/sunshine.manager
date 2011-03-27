@@ -15,4 +15,4 @@ default-server = 91.197.13.67
 default-port = 8074
 default-use-ssl = true
 default-use-specified-server = false
-default-synchronise-contacts-with-server = true
+param-synchronise-contacts-with-server = true

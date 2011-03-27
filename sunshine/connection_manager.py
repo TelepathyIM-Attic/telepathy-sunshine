@@ -16,6 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import os
 import telepathy
 import gobject
 import dbus
@@ -36,10 +37,10 @@ class SunshineConnectionManager(telepathy.server.ConnectionManager):
     def __init__(self, shutdown_func=None):
         "Initializer"
         telepathy.server.ConnectionManager.__init__(self, 'sunshine')
-
+        
         self._protos['gadugadu'] = SunshineConnection
         self._shutdown = shutdown_func
-        logger.info("Connection manager created")
+	logger.info("Connection manager created")
 
     def GetParameters(self, proto):
         "Returns the mandatory and optional parameters for the given proto."

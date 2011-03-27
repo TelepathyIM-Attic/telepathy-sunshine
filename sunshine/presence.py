@@ -101,7 +101,10 @@ class SunshinePresenceMapping(object):
             0x4104:                     ONLINE,
             0x4105:                     AWAY,
             0x4122:                     DND,
-            0x4116:                     INVISIBLE
+            0x4116:                     INVISIBLE,
+            # Jakis dziwny status, nie wiem skad sie wzial
+            0x4020:			OFFLINE,
+            0x4120:			OFFLINE
     }
 
     to_presence_type = {
@@ -164,7 +167,10 @@ class SunshinePresence(telepathy.server.ConnectionInterfaceSimplePresence):
                 #I dont know what to do here. Do I really need this? :P
                 contact = handle.contact
                 if contact is not None:
-                    presence = SunshinePresenceMapping.from_gg_to_tp[contact.status]
+		    if contact.status in SunshinePresenceMapping.from_gg_to_tp:
+			presence = SunshinePresenceMapping.from_gg_to_tp[contact.status]
+                    else:
+			presence = SunshinePresenceMapping.from_gg_to_tp[0]
                     personal_message = str('')
                 else:
                     presence = SunshinePresenceMapping.OFFLINE

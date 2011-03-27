@@ -72,9 +72,10 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
         result = {}
         for handle_id in contacts:
             handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
-            #if handle == self.GetSelfHandle():
-            #    #tutaj kiedys trzeba napisac kod odp za naszego avatara
-            #    result[handle] = ""
+            if handle == self.GetSelfHandle():
+		logger.info("Avatar for self handle...")
+		#tutaj kiedys trzeba napisac kod odp za naszego avatara
+		result[handle] = "1"
             url = 'http://api.gadu-gadu.pl/avatars/%s/0.xml' % (str(handle.name))
             d = getPage(url, timeout=10)
             d.addCallback(self.on_fetch_avatars_file_ok, url, handle)
@@ -123,7 +124,7 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
     def on_fetch_avatars_file_ok(self, result, url, handle):
         try:
             if result:
-                #logger.info("Avatar file retrieved from %s" % (url))
+                logger.info("Avatar file retrieved from %s" % (url))
                 e = minidom.parseString(result)
                 if e.getElementsByTagName('avatar')[0].attributes["blank"].value != '1':
                     timestamp = e.getElementsByTagName('timestamp')[0].firstChild.data

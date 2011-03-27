@@ -35,6 +35,7 @@ from twisted.internet import reactor, protocol
 from twisted.web.client import getPage
 from twisted.internet import task
 from twisted.python import log
+from twisted.internet import threads
 
 import dbus
 import telepathy
@@ -89,25 +90,31 @@ class GaduClientFactory(protocol.ClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         logger.info('Lost connection.  Reason: %s' % (reason))
-        if self.config.contactsLoop != None:
-            self.config.contactsLoop.stop()
-            self.config.contactsLoop = None
-        if self.config.exportLoop != None:
-            self.config.exportLoop.stop()
-            self.config.exportLoop = None
+        try:
+	    if self.config.contactsLoop != None:
+		self.config.contactsLoop.stop()
+		self.config.contactsLoop = None
+	    if self.config.exportLoop != None:
+		self.config.exportLoop.stop()
+		self.config.exportLoop = None
+	except:
+	    logger.info("Loops was not running")
         if reactor.running:
             reactor.stop()
             os._exit(1)
 
     def clientConnectionFailed(self, connector, reason):
         logger.info('Connection failed. Reason: %s' % (reason))
-        if self.config.contactsLoop != None:
-            self.config.contactsLoop.stop()
-            self.config.contactsLoop = None
-        if self.config.exportLoop != None:
-            self.config.exportLoop.stop()
-            self.config.exportLoop = None
-        if reactor.running:
+        try:
+	    if self.config.contactsLoop != None:
+		self.config.contactsLoop.stop()
+		self.config.contactsLoop = None
+	    if self.config.exportLoop != None:
+		self.config.exportLoop.stop()
+		self.config.exportLoop = None
+	except:
+	    logger.info("Loops was not running")
+	if reactor.running:
             reactor.stop()
             os._exit(1)
 
@@ -223,11 +230,21 @@ class SunshineConnection(telepathy.server.Connection,
             self._initial_personal_message = None
             self._personal_message = ''
 
+	    self.conn_checker = task.LoopingCall(self.connection_checker)
+	    self.conn_checker.start(5.0, False)
+
             logger.info("Connection to the account %s created" % account)
         except Exception, e:
             import traceback
             logger.exception("Failed to create Connection")
             raise
+
+    def connection_checker(self):
+	logger.info("Conn checker: %s" % len(self.manager._connections))
+	if len(self.manager._connections) == 0:
+	    logger.info("Connection checker killed CM")
+	    #self.quit()
+	    reactor.stop()
 
     @property
     def manager(self):
@@ -362,18 +379,23 @@ class SunshineConnection(telepathy.server.Connection,
         self.signal_new_channels([channel])
 
     #@async
+    #@deferred
     def updateContactsFile(self):
         """Method that updates contact file when it changes and in loop every 5 seconds."""
-        self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
+        reactor.callInThread(self.configfile.make_contacts_file, self.profile.groups, self.profile.contacts)
+        #self.configfile.make_contacts_file(self.profile.groups, self.profile.contacts)
 
     #@async
+    #@deferred
     def exportContactsFile(self):
         logger.info("Exporting contacts.")
+        # TODO: make fully non-blocking
         file = open(self.configfile.path, "r")
         contacts_xml = file.read()
         file.close()
         if len(contacts_xml) != 0:
-            self.profile.exportContacts(contacts_xml)
+	    reactor.callInThread(self.profile.exportContacts, contacts_xml)
+            #self.profile.exportContacts(contacts_xml)
 
     @async
     def makeTelepathyContactsChannel(self):

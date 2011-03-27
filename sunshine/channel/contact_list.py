@@ -101,7 +101,7 @@ def SunshineContactListChannelFactory(connection, manager, handle, props):
         props[telepathy.CHANNEL_INTERFACE + '.TargetHandleType'],
         props[telepathy.CHANNEL_INTERFACE + '.TargetHandle'])
 
-    if handle.get_name() == 'subscribe':
+    if handle.get_name() == 'stored':
         channel_class = SunshineSubscribeListChannel
     #hacky & tricky
 #    elif handle.get_name() == 'publish':

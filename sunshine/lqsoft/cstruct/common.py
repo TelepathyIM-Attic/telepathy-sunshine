@@ -228,14 +228,14 @@ class CStruct(object):
         dp = ItemWrapper(dict)
         
         for field in cls._field_order:
-            #print "Unpacking field @%d: %s" % (offset, field.name)
+            print "Unpacking field @%d: %s" % (offset, field.name)
             value, next_offset = field.unpack(dp, data, offset)
             dict[field.name] = value
             offset = next_offset
-            #print "Unpacked: " + repr(value)
+            print "Unpacked: " + repr(value)
 
         instance = cls(**dict)
-        #print "Unpacked: " + str(instance)
+        print "Unpacked: " + str(instance)
         return instance, offset
     
     def __field_value(self, field, default=None):

@@ -146,7 +146,7 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
     def on_contact_client_capabilities_changed(self, contact):
         self._update_capabilities(contact)
 
-    @async
+
     def contactAdded(self, handle):
         """When we add a contact in our contact list, add the
         capabilities to create text channel to the contact"""

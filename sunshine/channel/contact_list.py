@@ -101,21 +101,22 @@ def SunshineContactListChannelFactory(connection, manager, handle, props):
         props[telepathy.CHANNEL_INTERFACE + '.TargetHandleType'],
         props[telepathy.CHANNEL_INTERFACE + '.TargetHandle'])
 
-    if handle.get_name() == 'stored':
-        raise telepathy.errors.NotImplemented
-    elif handle.get_name() == 'subscribe':
+    if handle.get_name() == 'subscribe':
         channel_class = SunshineSubscribeListChannel
-    elif handle.get_name() == 'publish':
-        raise telepathy.errors.NotImplemented
-    elif handle.get_name() == 'hide':
-        raise telepathy.errors.NotImplemented
-    elif handle.get_name() == 'allow':
-        raise telepathy.errors.NotImplemented
-    elif handle.get_name() == 'deny':
-        raise telepathy.errors.NotImplemented
+    #hacky & tricky
+#    elif handle.get_name() == 'publish':
+#        channel_class = SunshineSubscribeListChannel
+
+#    elif handle.get_name() == 'publish':
+#        channel_class = ButterflyPublishListChannel
+#    elif handle.get_name() == 'hide':
+#        channel_class = ButterflyHideListChannel
+#    elif handle.get_name() == 'allow':
+#        channel_class = ButterflyAllowListChannel
+#    elif handle.get_name() == 'deny':
+#        channel_class = ButterflyDenyListChannel
     else:
-        logger.error("Unknown list type : " + handle.get_name())
-        raise telepathy.errors.InvalidHandle
+        raise TypeError("Unknown list type : " + handle.get_name())
     return channel_class(connection, manager, props)
 
 
@@ -127,7 +128,7 @@ class SunshineListChannel(
 
     def __init__(self, connection, manager, props, object_path=None):
         self._conn_ref = weakref.ref(connection)
-        telepathy.server.ChannelTypeContactList.__init__(self, connection, manager, props, object_path=object_path)
+        telepathy.server.ChannelTypeContactList.__init__(self, connection, manager, props, object_path=None)
         SunshineChannel.__init__(self, connection, props)
         telepathy.server.ChannelInterfaceGroup.__init__(self)
         self._populate(connection)
@@ -172,18 +173,12 @@ class SunshineSubscribeListChannel(SunshineListChannel):
     supposed to receive presence notification."""
 
     def __init__(self, connection, manager, props):
-        SunshineListChannel.__init__(self, connection, manager, props,
-                object_path='RosterChannel/List/subscribe')
+        SunshineListChannel.__init__(self, connection, manager, props)
         self.GroupFlagsChanged(telepathy.CHANNEL_GROUP_FLAG_CAN_ADD |
                 telepathy.CHANNEL_GROUP_FLAG_CAN_REMOVE, 0)
 
     def AddMembers(self, contacts, message):
         logger.info("Subscribe - AddMembers called")
-        for h in contacts:
-            self._add(h, message)
-
-
-        """
         for h in contacts:
             handle = self._conn.handle(telepathy.constants.HANDLE_TYPE_CONTACT, h)
             contact_xml = ET.Element("Contact")
@@ -208,13 +203,8 @@ class SunshineSubscribeListChannel(SunshineListChannel):
             self._conn_ref().contactAdded(handle)
             logger.info("Contact added.")
         self._conn_ref().exportContactsFile()
-        """
 
     def RemoveMembers(self, contacts, message):
-        for h in contacts:
-            self._remove(h)
-
-        """
         for h in contacts:
             handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, h)
             contact = handle.contact
@@ -222,45 +212,7 @@ class SunshineSubscribeListChannel(SunshineListChannel):
             self.MembersChanged('', (), [handle], (), (), 0,
                     telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
         self._conn_ref().exportContactsFile()
-        """
 
     def _filter_contact(self, contact):
         return (True, False, False)
-
-    def _add(self, handle_id, message):
-        handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
-        if handle.contact is not None:
-            return True
-
-        contact_xml = ET.Element("Contact")
-        ET.SubElement(contact_xml, "Guid").text = str(handle.name)
-        ET.SubElement(contact_xml, "GGNumber").text = str(handle.name)
-        ET.SubElement(contact_xml, "ShowName").text = str(handle.name)
-        ET.SubElement(contact_xml, "Groups")
-        c = GaduContact.from_xml(contact_xml)
-        self._conn_ref().gadu_client.addContact( c )
-        self._conn_ref().gadu_client.notifyAboutContact( c )
-        logger.info("Adding contact: %s" % (handle.name))
-        self.MembersChanged('', [handle], (), (), (), 0,
-                    telepathy.CHANNEL_GROUP_CHANGE_REASON_INVITED)
-
-        #alias and group settings for new contacts are bit tricky
-        #try to set alias
-        handle.contact.ShowName = self._conn_ref().get_contact_alias(handle.id)
-        #and group
-        if self._conn_ref().pending_contacts_to_group.has_key(handle.name):
-            logger.info("Trying to add temporary group.")
-            handle.contact.updateGroups(self._conn_ref().pending_contacts_to_group[handle.name])
-        self._conn_ref().contactAdded(handle)
-        logger.info("Contact added.")
-        self._conn_ref().exportContactsFile()
-
-    def _remove(self, handle_id):
-        handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, h)
-        contact = handle.contact
-        self._conn_ref().gadu_client.removeContact(contact, notify=True)
-        self.MembersChanged('', (), [handle], (), (), 0,
-                    telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
-        self._conn_ref().exportContactsFile()
-
 

@@ -41,7 +41,7 @@ class SunshineTextChannel(SunshineChannel,
                           telepathy.server.ChannelInterfaceChatState,
                           ChannelInterfaceMessages):
 
-    def __init__(self, conn, manager, conversation, props, object_path=None):
+    def __init__(self, conn, manager, conversation, props, object_path):
         _, surpress_handler, handle = manager._get_type_requested_handle(props)
         self._recv_id = 0
         self._conn_ref = weakref.ref(conn)
@@ -50,7 +50,7 @@ class SunshineTextChannel(SunshineChannel,
         self._pending_messages2 = {}
 
         self.handle = handle
-        telepathy.server.ChannelTypeText.__init__(self, conn, manager, props, object_path=object_path)
+        telepathy.server.ChannelTypeText.__init__(self, conn, manager, props, object_path)
         SunshineChannel.__init__(self, conn, props)
         telepathy.server.ChannelInterfaceChatState.__init__(self)
         ChannelInterfaceMessages.__init__(self)

@@ -19,7 +19,7 @@ import sys
 import urllib
 import logging
 
-debug_mode = False
+#__all__ = ['SunshineGaduAPI']
 
 logger = logging.getLogger('Sunshine.GaduAPI')
 
@@ -38,8 +38,6 @@ try:
 except:
     logger.info("oAuth module can't be loaded")
     oauth_loaded = False
-
-import xml.etree.ElementTree as ET
 import json
 import mimetools
 import mimetypes
@@ -115,8 +113,6 @@ class GG_Oauth(object):
     #
 
     def requestToken(self):
-        if debug_mode:
-            logger.info("requestToken")
         oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, http_method='POST', http_url=REQUEST_TOKEN_URL) # create an oauth request
         oauth_request.sign_request(self._signature_method, self.consumer, None) # the request knows how to generate a signature
         auth_header = oauth_request.to_header()
@@ -140,28 +136,14 @@ class GG_Oauth(object):
         d.addErrback(self.cbShutdown)
 
     def cbRequestToken(self, response):
-        if debug_mode:
-            logger.info("cbRequestToken")
-        mimetype = response.headers.getRawHeaders('Content-Type', 'text/xml')
         finished = Deferred()
         response.deliverBody(BeginningPrinter(finished))
-        finished.addCallback(self.cbRequestTokenSuccess, mimetype[0])
+        finished.addCallback(self.cbRequestTokenSuccess)
         finished.addErrback(self.cbShutdown)
         return finished
 
-    def cbRequestTokenSuccess(self, result, mimetype):
-        if debug_mode:
-            logger.info("cbRequestTokenSuccess result: %s, mime: %s" % (result, mimetype))
-        content = {}
-        if mimetype == 'application/json':
-            content = json.loads(result)['result']
-        elif mimetype == 'text/xml':
-            xml = ET.fromstring(result)
-            content['oauth_token'] = xml.find("oauth_token").text
-            content['oauth_token_secret'] = xml.find("oauth_token_secret").text
-        else:
-            logger.info("cbRequestTokenSuccess failed: unknown mimetype.")
-            return
+    def cbRequestTokenSuccess(self, result):
+        content = json.loads(result)['result']
 
         oauth_token = oauth.OAuthToken(content['oauth_token'], content['oauth_token_secret'])
 
@@ -186,8 +168,6 @@ class GG_Oauth(object):
         d.addErrback(self.cbShutdown)
 
     def cbTokenAuthorised(self, result, oauth_token):
-        if debug_mode:
-            logger.info("cbTokenAuthorised")
         oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=oauth_token, http_method='POST', http_url=ACCESS_TOKEN_URL) # create an oauth request
         oauth_request.sign_request(self._signature_method, self.consumer, oauth_token) # the request knows how to generate a signature
         auth_header = oauth_request.to_header()
@@ -209,28 +189,14 @@ class GG_Oauth(object):
         d.addErrback(self.cbShutdown)
 
     def requestAccessToken(self, response, oauth_token):
-        if debug_mode:
-            logger.info("requestAccessToken")
-        mimetype = response.headers.getRawHeaders('Content-Type', 'text/xml')
         finished = Deferred()
         response.deliverBody(BeginningPrinter(finished))
-        finished.addCallback(self.accessTokenReceived, oauth_token, mimetype[0])
+        finished.addCallback(self.accessTokenReceived, oauth_token)
         finished.addErrback(self.cbShutdown)
         return finished
 
-    def accessTokenReceived(self, result, oauth_token, mimetype):
-        if debug_mode:
-            logger.info("accessTokenReceived result: %s, mimetype: %s" % (result, mimetype))
-        content = {}
-        if mimetype == 'application/json':
-            content = json.loads(result)['result']
-        elif mimetype == 'text/xml':
-            xml = ET.fromstring(result)
-            content['oauth_token'] = xml.find("oauth_token").text
-            content['oauth_token_secret'] = xml.find("oauth_token_secret").text
-        else:
-            logger.info("accessTokenReceived failed: unknown mimetype.")
-            return
+    def accessTokenReceived(self, result, oauth_token):
+        content = json.loads(result)['result']
 
         self.access_token = oauth.OAuthToken(content['oauth_token'], content['oauth_token_secret'])
         self.expire_token = time.time()+36000
@@ -269,8 +235,6 @@ class GG_Oauth(object):
         return boundary, body
         
     def putAvatar(self, data, ext):
-        if debug_mode:
-            logger.info("accessTokenReceived")
         url = str(PUT_AVATAR_URL % self.uin)
 
         oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=self.access_token, http_method='PUT', http_url=url) # create an oauth request
@@ -303,8 +267,6 @@ class GG_Oauth(object):
         logger.info("New avatar should be uploaded now.")
     
     def fetchUserInfo(self, uin):
-        if debug_mode:
-            logger.info("fetchUserInfo")
         url = str(GET_INFO_URL % uin)
         
         oauth_request = oauth.OAuthRequest.from_consumer_and_token(self.consumer, token=self.access_token, http_method='GET', http_url=url) # create an oauth request
@@ -328,8 +290,6 @@ class GG_Oauth(object):
         d.addErrback(self.cbShutdown)
         
     def fetchUserInfoSuccess(self, response):
-        if debug_mode:
-            logger.info("fetchUserInfoSuccess")
         finished = Deferred()
         response.deliverBody(BeginningPrinter(finished))
         finished.addCallback(self.onUserInfoRecv)
@@ -337,8 +297,6 @@ class GG_Oauth(object):
         return finished
 
     def onUserInfoRecv(self, result):
-        if debug_mode:
-            logger.info("onUserInfoRecv")
         content = json.loads(result)['result']
         self.onUserInfo(content)
         
@@ -346,20 +304,16 @@ class GG_Oauth(object):
         pass
     
     def cbShutdown(self, reason):
-        logger.info("Something went wrong: %s" % (reason))
-        #print 'cbShutdown: ', reason
+        logger.info("Something went wrong.")
+        print 'cbShutdown: ', reason
     
     def checkTokenForAvatar(self, data, ext):
-        if debug_mode:
-            logger.info("checkTokenForAvatar")
         #print 'checkTokenForAvatar'
         if int(time.time()) <= self.expire_token and self.access_token != None:
             self.putAvatar(data, ext)
             self.__loopingcall.stop()
     
     def checkTokenForUserInfo(self, uin):
-        if debug_mode:
-            logger.info("checkTokenForUserInfo")
         if int(time.time()) <= self.expire_token and self.access_token != None:
             self.fetchUserInfo(uin)
             self.__loopingcall.stop()
@@ -368,8 +322,6 @@ class GG_Oauth(object):
         self.requestToken()
             
     def uploadAvatar(self, data, ext):
-        if debug_mode:
-            logger.info("uploadAvatar")
         if int(time.time()) <= self.expire_token and self.access_token != None:
             self.putAvatar(data, ext)
         else:
@@ -378,8 +330,6 @@ class GG_Oauth(object):
             self.__loopingcall.start(1.0)
 
     def getUserInfo(self, uin):
-        if debug_mode:
-            logger.info("getUserInfo")
         if int(time.time()) <= self.expire_token and self.access_token != None:
             self.fetchUserInfo(uin)
         else:
@@ -388,8 +338,6 @@ class GG_Oauth(object):
             self.__loopingcall.start(1.0)
             
     def getUserInfoDeffered(self, uin):
-        if debug_mode:
-            logger.info("getUserInfoDeffered")
         d = Deferred()
         if int(time.time()) <= self.expire_token and self.access_token != None:
             d.addCallback(self.onUserInfoRecv)

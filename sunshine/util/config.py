@@ -16,44 +16,7 @@ class SunshineConfig(object):
         self.contacts_len = 0
         self.groups_len = 0
 
-    def check_dirs(self):
-        path = os.path.join(os.path.join(os.environ['HOME'], '.telepathy-sunshine'))
-        try:
-            os.makedirs(path)
-        except:
-            pass
-        if not os.path.isfile(os.path.join(path, '%s.xml' % (str(self.uin)))):
-            contactbook_xml = ET.Element("ContactBook")
-
-            ET.SubElement(contactbook_xml, "Groups")
-            ET.SubElement(contactbook_xml, "Contacts")
-
-            main_xml = ET.ElementTree(contactbook_xml)
-            main_xml.write(os.path.join(path, '%s.xml'  % (str(self.uin))), encoding="UTF-8")
-
-        self.path = os.path.join(path, '%s.xml' % (str(self.uin)))
-        return os.path.join(path, '%s.xml' % (str(self.uin)))
-
-    def get_contacts(self):
-        self.roster = {'groups':[], 'contacts':[]}
-        try:
-            file = open(self.path, "r")
-            config_xml = ET.parse(file).getroot()
-
-            for elem in config_xml.find('Groups').getchildren():
-                self.roster['groups'].append(elem)
-
-            for elem in config_xml.find('Contacts').getchildren():
-                self.roster['contacts'].append(elem)
-
-            self.contacts_count = len(config_xml.find('Contacts').getchildren())
-
-            return self.roster
-        except:
-            self.contacts_count = 0
-        return self.roster
-
-    def make_contacts_file(self, groups, contacts, to_file=False):
+    def make_contacts_file(self, groups, contacts):
         contactbook_xml = ET.Element("ContactBook")
 
         groups_xml = ET.SubElement(contactbook_xml, "Groups")
@@ -86,14 +49,8 @@ class SunshineConfig(object):
 
         main_xml = ET.ElementTree(contactbook_xml)
         if self.contacts_len >= 0 and self.groups_len >= 0:
-            if to_file:
-                main_xml.write(self.path, encoding="UTF-8")
             return main_xml
 
     def get_contacts_count(self):
         return self.contacts_count
-
-    def save_to_file(self, xml):
-        xml.write(self.path, encoding="UTF-8")
-
 

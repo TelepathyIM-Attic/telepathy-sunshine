@@ -111,7 +111,7 @@ class GaduProfile(object):
 
     def setMyState(self, new_state, new_description=''):
         if not self.connected:
-            raise RuntimeError("You need to be connected, to import contact list from the server.")
+            raise RuntimeError("You need to be connected, to change your status or presence.")
 
         self.__connection.changeStatus(new_state, new_description)
 

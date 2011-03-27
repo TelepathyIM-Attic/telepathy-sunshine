@@ -347,6 +347,7 @@ class GG_Oauth(object):
     
     def cbShutdown(self, reason):
         logger.info("Something went wrong: %s" % (reason))
+        #print 'cbShutdown: ', reason
     
     def checkTokenForAvatar(self, data, ext):
         if debug_mode:

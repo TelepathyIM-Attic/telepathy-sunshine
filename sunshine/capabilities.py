@@ -22,8 +22,8 @@ import dbus
 
 import telepathy
 
-from telepathy._generated.Connection_Interface_Contact_Capabilities \
-     import ConnectionInterfaceContactCapabilities
+#from telepathy._generated.Connection_Interface_Contact_Capabilities \
+#     import ConnectionInterfaceContactCapabilities
 
 from sunshine.util.decorator import async
 from sunshine.handle import SunshineHandleFactory
@@ -33,7 +33,7 @@ __all__ = ['SunshineCapabilities']
 logger = logging.getLogger('Sunshine.Capabilities')
 
 class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
-        ConnectionInterfaceContactCapabilities):
+        telepathy.server.ConnectionInterfaceContactCapabilities):
 
     text_chat_class = \
         ({telepathy.CHANNEL_INTERFACE + '.ChannelType':
@@ -64,10 +64,10 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
 
     def __init__(self):
         telepathy.server.ConnectionInterfaceCapabilities.__init__(self)
-        ConnectionInterfaceContactCapabilities.__init__(self)
+        telepathy.server.ConnectionInterfaceContactCapabilities.__init__(self)
 
         # handle -> list(RCC)
-        self._contact_caps = {}
+        #self._contact_caps = {}
         self._video_clients = []
         self._update_capabilities_calls = []
 
@@ -84,7 +84,7 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
         return telepathy.server.ConnectionInterfaceCapabilities.\
             AdvertiseCapabilities(self, add, remove)
 
-
+    """
     def GetContactCapabilities(self, handles):
         if 0 in handles:
             raise telepathy.InvalidHandle('Contact handle list contains zero')
@@ -101,6 +101,7 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
                 ret[handle] = dbus.Array([], signature='(a{sv}as)')
 
         return ret
+    """
 
     def UpdateCapabilities(self, caps):
         if self._status != telepathy.CONNECTION_STATUS_CONNECTED:

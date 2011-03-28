@@ -82,7 +82,7 @@ class SunshineTextChannel(SunshineChannel,
 
     def Close(self):
         telepathy.server.ChannelTypeText.Close(self)
-        self.remove_from_connection()
+        #self.remove_from_connection()
 
     # Redefine GetSelfHandle since we use our own handle
     #  as Butterfly doesn't have channel specific handles
@@ -187,7 +187,7 @@ class SunshineRoomTextChannel(telepathy.server.ChannelTypeText, telepathy.server
 
     def Close(self):
         telepathy.server.ChannelTypeText.Close(self)
-        self.remove_from_connection()
+        #self.remove_from_connection()
 
     def GetSelfHandle(self):
         return self._conn.GetSelfHandle()

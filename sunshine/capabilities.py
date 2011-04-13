@@ -25,8 +25,8 @@ import telepathy
 try:
     from telepathy.server import ConnectionInterfaceContactCapabilities
 except:
-from telepathy._generated.Connection_Interface_Contact_Capabilities \
-     import ConnectionInterfaceContactCapabilities
+    from telepathy._generated.Connection_Interface_Contact_Capabilities \
+        import ConnectionInterfaceContactCapabilities
 
 from sunshine.util.decorator import async
 from sunshine.handle import SunshineHandleFactory

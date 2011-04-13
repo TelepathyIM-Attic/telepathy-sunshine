@@ -22,8 +22,11 @@ import dbus
 
 import telepathy
 
-#from telepathy._generated.Connection_Interface_Contact_Capabilities \
-#     import ConnectionInterfaceContactCapabilities
+try:
+    from telepathy.server import ConnectionInterfaceContactCapabilities
+except:
+from telepathy._generated.Connection_Interface_Contact_Capabilities \
+     import ConnectionInterfaceContactCapabilities
 
 from sunshine.util.decorator import async
 from sunshine.handle import SunshineHandleFactory
@@ -33,7 +36,7 @@ __all__ = ['SunshineCapabilities']
 logger = logging.getLogger('Sunshine.Capabilities')
 
 class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
-        telepathy.server.ConnectionInterfaceContactCapabilities):
+        ConnectionInterfaceContactCapabilities):
 
     text_chat_class = \
         ({telepathy.CHANNEL_INTERFACE + '.ChannelType':
@@ -64,7 +67,7 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
 
     def __init__(self):
         telepathy.server.ConnectionInterfaceCapabilities.__init__(self)
-        telepathy.server.ConnectionInterfaceContactCapabilities.__init__(self)
+        ConnectionInterfaceContactCapabilities.__init__(self)
 
         # handle -> list(RCC)
         #self._contact_caps = {}

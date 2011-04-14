@@ -149,13 +149,13 @@ class GaduClient(Protocol):
         self.msg_id += 1
         self.user_profile.onMessageReceived(msg)
 
-        self.sendMsgAck(self.msg_id)
+        self.sendMsgAck(msg.seq)
 
     def _handleMessageAckPacket(self, msg):
         print "MSG_Status=%x, recipient=%d, seq=%d" % (msg.msg_status, msg.recipient, msg.seq) 
 
     def _handleTypingNotifyPacket(self, data):
-        #print "MSG Typing Notify uin=%d, type=%d" % (data.uin, data.type)
+        print "MSG Typing Notify uin=%d, type=%d" % (data.uin, data.type)
         self.user_profile.onTypingNotification(data)
 
     def _handleDisconnectPacket(self, msg):
@@ -202,6 +202,7 @@ class GaduClient(Protocol):
         self._log("All contacts exported.")
 
     def sendPing(self):
+        print '[PING]'
         if self.firstPing != True:
             self._sendPacket( Resolver.by_name('PingPacket')() )
         self.firstPing = False

@@ -70,7 +70,7 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
         ConnectionInterfaceContactCapabilities.__init__(self)
 
         # handle -> list(RCC)
-        #self._contact_caps = {}
+        self._contact_caps = {}
         self._video_clients = []
         self._update_capabilities_calls = []
 
@@ -87,7 +87,6 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
         return telepathy.server.ConnectionInterfaceCapabilities.\
             AdvertiseCapabilities(self, add, remove)
 
-    """
     def GetContactCapabilities(self, handles):
         if 0 in handles:
             raise telepathy.InvalidHandle('Contact handle list contains zero')
@@ -104,7 +103,6 @@ class SunshineCapabilities(telepathy.server.ConnectionInterfaceCapabilities,
                 ret[handle] = dbus.Array([], signature='(a{sv}as)')
 
         return ret
-    """
 
     def UpdateCapabilities(self, caps):
         if self._status != telepathy.CONNECTION_STATUS_CONNECTED:

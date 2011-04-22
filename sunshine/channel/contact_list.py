@@ -28,6 +28,8 @@ from sunshine.util.decorator import async
 from sunshine.handle import SunshineHandleFactory
 from sunshine.channel import SunshineChannel
 
+from twisted.internet import reactor, defer
+
 from sunshine.lqsoft.pygadu.twisted_protocol import GaduClient
 from sunshine.lqsoft.pygadu.models import GaduProfile, GaduContact
 
@@ -35,6 +37,7 @@ __all__ = ['SunshineContactListChannelFactory']
 
 logger = logging.getLogger('Sunshine.ContactListChannel')
 
+"""
 class HandleMutex(object):
     def __init__(self):
         self._handles = set()
@@ -94,7 +97,7 @@ class Lockable(object):
         return method
 
 mutex = HandleMutex()
-
+"""
 
 def SunshineContactListChannelFactory(connection, manager, handle, props):
     handle = connection.handle(
@@ -169,7 +172,8 @@ class SunshineListChannel(
     def on_addressbook_contact_unblocked(self, contact):
         pass
 
-    @async
+    #@async
+    @defer.inlineCallbacks
     def _populate(self, connection):
         added = set()
         local_pending = set()
@@ -251,9 +255,9 @@ class SunshineSubscribeListChannel(SunshineListChannel):
 
     def RemoveMembers(self, contacts, message):
         for h in contacts:
-	    handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, h)
-	    contact = handle.contact
-	    self._conn_ref().gadu_client.removeContact(contact, notify=True)
+        handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, h)
+        contact = handle.contact
+        self._conn_ref().gadu_client.removeContact(contact, notify=True)
             self.MembersChanged('', (), [handle], (), (), 0,
                     telepathy.CHANNEL_GROUP_CHANGE_REASON_NONE)
 =======
@@ -299,7 +303,8 @@ class SunshineSubscribeListChannel(SunshineListChannel):
 #                done_cb=(finished_cb,),
 #                failed_cb=(finished_cb,))
 
-    @Lockable(mutex, 'rem_subscribe', 'finished_cb')
+    #@Lockable(mutex, 'rem_subscribe', 'finished_cb')
+    @defer.inlineCallbacks
     def _remove(self, handle_id, finished_cb):
         handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
         contact = handle.contact

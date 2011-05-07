@@ -24,12 +24,15 @@ import telepathy
 from sunshine.connection import SunshineConnection
 from sunshine.presence import SunshinePresenceMapping
 
+from sunshine.Protocol_Interface_Avatars import ProtocolInterfaceAvatars
+
 __all__ = ['SunshineProtocol']
 
 logger = logging.getLogger('Sunshine.Protocol')
 
 class SunshineProtocol(telepathy.server.Protocol,
-                        telepathy.server.ProtocolInterfacePresence):
+                        telepathy.server.ProtocolInterfacePresence,
+                        ProtocolInterfaceAvatars):
 
     _proto = "gadugadu"
     _vcard_field = ""
@@ -78,24 +81,6 @@ class SunshineProtocol(telepathy.server.Protocol,
           telepathy.CHANNEL_INTERFACE + '.TargetHandleType': dbus.UInt32(telepathy.HANDLE_TYPE_LIST)},
          [telepathy.CHANNEL_INTERFACE + '.TargetHandle',
           telepathy.CHANNEL_INTERFACE + '.TargetID']),
-
-        #({telepathy.CHANNEL_INTERFACE + '.ChannelType': dbus.String(telepathy.CHANNEL_TYPE_STREAMED_MEDIA),
-          #telepathy.CHANNEL_INTERFACE + '.TargetHandleType': dbus.UInt32(telepathy.HANDLE_TYPE_CONTACT)},
-         #[telepathy.CHANNEL_INTERFACE + '.TargetHandle',
-          #telepathy.CHANNEL_INTERFACE + '.TargetID',
-          #telepathy.CHANNEL_TYPE_STREAMED_MEDIA + '.InitialAudio',
-          #telepathy.CHANNEL_TYPE_STREAMED_MEDIA + '.InitialVideo']),
-
-        #({telepathy.CHANNEL_INTERFACE + '.ChannelType': dbus.String(telepathy.CHANNEL_TYPE_FILE_TRANSFER),
-          #telepathy.CHANNEL_INTERFACE + '.TargetHandleType': dbus.UInt32(telepathy.HANDLE_TYPE_CONTACT)},
-         #[telepathy.CHANNEL_INTERFACE + '.TargetHandle',
-          #telepathy.CHANNEL_INTERFACE + '.TargetID',
-          #telepathy.CHANNEL_TYPE_FILE_TRANSFER + '.ContentType',
-          #telepathy.CHANNEL_TYPE_FILE_TRANSFER + '.Filename',
-          #telepathy.CHANNEL_TYPE_FILE_TRANSFER + '.Size',
-          #telepathy.CHANNEL_TYPE_FILE_TRANSFER + '.ContentHash',
-          #telepathy.CHANNEL_TYPE_FILE_TRANSFER + '.Description',
-          #telepathy.CHANNEL_TYPE_FILE_TRANSFER + '.Date'])
         ]
 
     _supported_interfaces = [
@@ -132,6 +117,7 @@ class SunshineProtocol(telepathy.server.Protocol,
     def __init__(self, connection_manager):
         telepathy.server.Protocol.__init__(self, connection_manager, 'gadugadu')
         telepathy.server.ProtocolInterfacePresence.__init__(self)
+        ProtocolInterfaceAvatars.__init__(self)
 
     def create_connection(self, connection_manager, parameters):
         return SunshineConnection(self, connection_manager, parameters)

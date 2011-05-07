@@ -64,23 +64,6 @@ class SunshinePresenceMapping(object):
             }
 
     from_gg_to_tp = {
-            #        'NOT_AVAILABLE':         0x0001,
-            #        'NOT_AVAILABLE_DESC':    0x0015,
-            #        'FFC':                  0x0017,
-            #        'FFC_DESC':             0x0018,
-            #        'AVAILABLE':             0x0002,
-            #        'AVAILABLE_DESC':        0x0004,
-            #        'BUSY':                 0x0003,
-            #        'BUSY_DESC':            0x0005,
-            #        'DND':                  0x0021,
-            #        'DND_DESC':             0x0022,
-            #        'HIDDEN':               0x0014,
-            #        'HIDDEN_DESC':          0x0016,
-            #        'DND':                  0x0021,
-            #        'BLOCKED':              0x0006,
-            #        'MASK_FRIEND':          0x8000,
-            #        'MASK_GFX':             0x0100,
-            #        'MASK_STATUS':          0x4000,
             0:                          OFFLINE,
             0x0001:                     OFFLINE,
             0x4015:                     OFFLINE,
@@ -121,12 +104,13 @@ class SunshinePresence(telepathy.server.ConnectionInterfaceSimplePresence):
     def __init__(self):
         telepathy.server.ConnectionInterfaceSimplePresence.__init__(self)
 
-        dbus_interface = 'org.freedesktop.Telepathy.Connection.Interface.SimplePresence'
-
         self.presence = None
         self.personal_message = None
 
-        self._implement_property_get(dbus_interface, {'Statuses' : self.get_statuses})
+        self._implement_property_get(
+            telepathy.CONNECTION_INTERFACE_SIMPLE_PRESENCE, {
+                'Statuses' : lambda: self._protocol.statuses
+            })
 
     # SimplePresence
 
@@ -180,27 +164,6 @@ class SunshinePresence(telepathy.server.ConnectionInterfaceSimplePresence):
 
             presences[handle] = dbus.Struct((presence_type, presence, personal_message), signature='uss')
         return presences
-
-    def get_statuses(self):
-        # you get one of these for each status
-        # {name:(Type, May_Set_On_Self, Can_Have_Message}
-        return dbus.Dictionary({
-            SunshinePresenceMapping.ONLINE:(
-                telepathy.CONNECTION_PRESENCE_TYPE_AVAILABLE,
-                True, True),
-            SunshinePresenceMapping.AWAY:(
-                telepathy.CONNECTION_PRESENCE_TYPE_AWAY,
-                True, True),
-            SunshinePresenceMapping.DND:(
-                telepathy.CONNECTION_PRESENCE_TYPE_BUSY,
-                True, True),
-            SunshinePresenceMapping.INVISIBLE:(
-                telepathy.CONNECTION_PRESENCE_TYPE_HIDDEN,
-                True, True),
-            SunshinePresenceMapping.OFFLINE:(
-                telepathy.CONNECTION_PRESENCE_TYPE_OFFLINE,
-                True, True)
-        }, signature='s(ubb)')
 
     @async
     def _presence_changed(self, handle, presence, personal_message):

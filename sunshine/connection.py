@@ -128,30 +128,8 @@ class SunshineConnection(telepathy.server.Connection,
         SunshineContacts
         ):
 
-    _secret_parameters = set([
-            'password'
-            ])
-    _mandatory_parameters = {
-            'account' : 's',
-            'password' : 's'
-            }
-    _optional_parameters = {
-            'server' : 's',
-            'port' : 'q',
-            'export-contacts' : 'b',
-            'use-ssl' : 'b',
-            'use-specified-server' : 'b'
-            }
-    _parameter_defaults = {
-            'server' : '91.197.13.67',
-            'port' : 8074,
-            'export-contacts' : False,
-            'use-ssl' : True,
-            'use-specified-server' : False
-            }
-
-    def __init__(self, manager, parameters):
-        self.check_parameters(parameters)
+    def __init__(self, protocol, manager, parameters):
+        protocol.check_parameters(parameters)
 
         try:
             account = unicode(parameters['account'])
@@ -202,7 +180,7 @@ class SunshineConnection(telepathy.server.Connection,
             if check_requirements() == True:
                 self.ggapi = GG_Oauth(self.profile.uin, parameters['password'])
             
-            self._channel_manager = SunshineChannelManager(self)
+            self._channel_manager = SunshineChannelManager(self, protocol)
 
             self._recv_id = 0
             self._conf_id = 0
@@ -211,7 +189,7 @@ class SunshineConnection(telepathy.server.Connection,
             self.profile.contactsLoop = None
             
             # Call parent initializers
-            telepathy.server.Connection.__init__(self, 'gadugadu', account, 'sunshine')
+            telepathy.server.Connection.__init__(self, 'gadugadu', account, 'sunshine', protocol)
             telepathy.server.ConnectionInterfaceRequests.__init__(self)
             SunshinePresence.__init__(self)
             SunshineAvatars.__init__(self)

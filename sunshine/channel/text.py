@@ -59,13 +59,15 @@ class SunshineTextChannel(SunshineChannel,
             'SupportedContentTypes': lambda: ["text/plain"],
             'MessagePartSupportFlags': lambda: 1,
             'DeliveryReportingSupport': lambda: 0,
-            'PendingMessages': lambda: dbus.Array(self._pending_messages2.values(), signature='aa{sv}')
+            'PendingMessages': lambda: dbus.Array(self._pending_messages2.values(), signature='aa{sv}'),
+            'MessageTypes': lambda: message_type != telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL
             })
 
         self._add_immutables({
             'SupportedContentTypes': CHANNEL_INTERFACE_MESSAGES,
             'MessagePartSupportFlags': CHANNEL_INTERFACE_MESSAGES,
             'DeliveryReportingSupport': CHANNEL_INTERFACE_MESSAGES,
+            'MessageTypes': CHANNEL_INTERFACE_MESSAGES,
             })
 
     def Send(self, message_type, text):

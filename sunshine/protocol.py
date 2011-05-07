@@ -34,7 +34,7 @@ class SunshineProtocol(telepathy.server.Protocol,
     _proto = "gadugadu"
     _vcard_field = ""
     _english_name = "Gadu-Gadu"
-    _icon = "im-gadu"
+    _icon = "im-gadugadu"
 
     _secret_parameters = set([
             'password'

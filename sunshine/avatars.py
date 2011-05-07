@@ -27,6 +27,7 @@ from sunshine.lqsoft.gaduapi import *
 import telepathy
 
 from twisted.web.client import getPage
+from twisted.internet.task import coiterate
 
 from xml.dom import minidom
 
@@ -73,9 +74,9 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
         for handle_id in contacts:
             handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
             if handle == self.GetSelfHandle():
-		logger.info("Avatar for self handle...")
-		#tutaj kiedys trzeba napisac kod odp za naszego avatara
-		result[handle] = "1"
+                logger.info("Avatar for self handle...")
+                #tutaj kiedys trzeba napisac kod odp za naszego avatara
+                result[handle] = "1"
             url = 'http://api.gadu-gadu.pl/avatars/%s/0.xml' % (str(handle.name))
             d = getPage(url, timeout=10)
             d.addCallback(self.on_fetch_avatars_file_ok, url, handle)
@@ -83,13 +84,18 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
         return result
 
     def RequestAvatars(self, contacts):
-        for handle_id in contacts:
-            handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
-            
-            d = getPage(str(self.avatars_urls[handle.name]['avatar']), timeout=20)
-            d.addCallback(self.on_fetch_avatars_ok, handle)
-            d.addErrback(self.on_fetch_avatars_failed, handle)
-     
+        def simpleIterate(contacts):
+            if len(contacts) > 0:
+                for handle_id in contacts:
+                    handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
+
+                    d = getPage(str(self.avatars_urls[handle.name]['avatar']), timeout=20)
+                    d.addCallback(self.on_fetch_avatars_ok, handle)
+                    d.addErrback(self.on_fetch_avatars_failed, handle)
+
+                    yield d
+        coiterate(simpleIterate(contacts))
+
     def SetAvatar(self, avatar, mime_type):
         if check_requirements() == True:
             if not isinstance(avatar, str):
@@ -104,7 +110,7 @@ class SunshineAvatars(telepathy.server.ConnectionInterfaceAvatars):
 
     def getAvatar(self, sender, url):
         handle_id = self.get_handle_id_by_name(telepathy.constants.HANDLE_TYPE_CONTACT, str(sender))
-        
+
         if handle_id != 0:
             handle = self.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
             

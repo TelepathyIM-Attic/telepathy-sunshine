@@ -173,7 +173,7 @@ class SunshineListChannel(
         pass
 
     #@async
-    @defer.inlineCallbacks
+    #@defer.inlineCallbacks
     def _populate(self, connection):
         added = set()
         local_pending = set()

@@ -208,8 +208,8 @@ class SunshineConnection(telepathy.server.Connection,
             self._initial_personal_message = None
             self._personal_message = ''
 
-	    self.conn_checker = task.LoopingCall(self.connection_checker)
-	    self.conn_checker.start(5.0, False)
+            self.conn_checker = task.LoopingCall(self.connection_checker)
+            self.conn_checker.start(5.0, False)
 
             logger.info("Connection to the account %s created" % account)
         except Exception, e:
@@ -218,11 +218,10 @@ class SunshineConnection(telepathy.server.Connection,
             raise
 
     def connection_checker(self):
-	logger.info("Conn checker: %s" % len(self.manager._connections))
-	if len(self.manager._connections) == 0:
-	    logger.info("Connection checker killed CM")
-	    #self.quit()
-	    reactor.stop()
+        if len(self.manager._connections) == 0:
+            logger.info("Connection checker killed CM")
+            #self.quit()
+            reactor.stop()
 
     @property
     def manager(self):

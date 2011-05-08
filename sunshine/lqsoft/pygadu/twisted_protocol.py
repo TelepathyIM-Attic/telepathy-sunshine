@@ -32,6 +32,7 @@ class GaduClient(Protocol):
         self.__pingThread = None
 
         self.msg_id = 0
+        self.clistversion = 0
 
     def connectionMade(self):
         self.__buffer = ''        
@@ -198,7 +199,9 @@ class GaduClient(Protocol):
         #        type = ULRequestPacket.TYPE.PUT_MORE
         #    self._sendPacket(klass(type = type, data = batch))
         
-        self._sendPacket(klass(type = ULRequestPacket.TYPE.PUT, data = xml))
+        self.clistversion = self.clistversion+1
+        
+        self._sendPacket(klass(type = ULRequestPacket.TYPE.PUT, version = self.clistversion, data = xml))
         self._log("All contacts exported.")
 
     def sendPing(self):
@@ -319,17 +322,21 @@ class GaduClient(Protocol):
         return True
 
     def _handleULReplyPacket(self, msg):
-        if msg.is_get:
+        if msg.type == 0x00:
             if not self.importrq_cb:
                 self._warn("Unexpected UL_GET reply")
                 return
-                
-            self.import_buf += msg.data
 
-            if msg.is_final:
-                cb = self.importrq_cb
-                self.importrq_cb = None
-                cb.callback(self.import_buf)
+            self.import_buf = msg.data
+
+            cb = self.importrq_cb
+            self.importrq_cb = None
+            self.clistversion = msg.version
+            cb.callback(self.import_buf)
+        elif msg.type == 0x10:
+            self.clistversion = msg.version
+        elif msg.type == 0x12:
+            self._log("UL_PUT ivalid contactlist version")
         else:
             self._log("UL_PUT reply")
         

@@ -183,7 +183,7 @@ StatusNoticiesPacket = inpacket(0x37)(StatusNoticiesPacket)
 #
 # Contact database altering packets
 #
-class ULRequestPacket(GaduPacket): # UserListReq80
+class ULRequestPacket(GaduPacket): # UserListReq100
     """Import contact list from the server"""
     TYPE = Enum({
         'PUT':      0x00,
@@ -191,29 +191,66 @@ class ULRequestPacket(GaduPacket): # UserListReq80
         'GET':      0x02,
     })
 
-    type    =   ByteField(0)
-    data    =   StringField(1, length=-1)
-ULRequestPacket = outpacket(0x2f)(ULRequestPacket)
-
-class ULReplyPacket(GaduPacket): # UserListReply80
-    TYPE = Enum({
-        'PUT_REPLY':        0x00,
-        'PUT_REPLY_MORE':   0x02,
-        'GET_REPLY_MORE':   0x04,
-        'GET_REPLY':        0x06,
+    FORMAT_TYPE = Enum({
+        'NONE':     0x00,
+        'GG70':     0x01,
+        'GG100':    0x02,
     })
 
     type    =   ByteField(0)
-    data    =   StringField(1, length=-1)
+    version =   IntField(1, default=0)
+    format_type = ByteField(2, default=FORMAT_TYPE.GG100) # GG10
+    unknown1 =  ByteField(3, default=0x01)
+    data    =   StringField(4, length=-1)
+ULRequestPacket = outpacket(0x40)(ULRequestPacket)
 
-    @property
-    def is_get(self):
-        return (self.type & self.TYPE.GET_REPLY_MORE)
+class ULReplyPacket(GaduPacket): # UserListReply100
+    #TYPE = Enum({
+        #'PUT_REPLY':        0x00,
+        #'PUT_REPLY_MORE':   0x02,
+        #'GET_REPLY_MORE':   0x04,
+        #'GET_REPLY':        0x06,
+    #})
+
+    #type    =   ByteField(0)
+    #data    =   StringField(1, length=-1)
+
+    #char type;      /* rodzaj odpowiedzi */
+    #int version;        /* numer wersji listy kontaktów aktualnie przechowywanej przez serwer */
+    #char format_type;   /* rodzaj przesyłanego typu formatu listy kontaktów */
+    #char unknown1;      /* zawsze 0x01 */
+    #char reply[];       /* treść (nie musi wystąpić) */
+
+    TYPE = Enum({
+        'LIST':     0x00,
+        'ACK':      0x10,
+        'REJECT':   0x12,
+    })
+
+    FORMAT_TYPE = Enum({
+        'NONE':     0x00,
+        'GG70':     0x01,
+        'GG100':    0x02,
+    })
+
+    type    =   ByteField(0)
+    version =   IntField(1)
+    format_type = ByteField(2, default=FORMAT_TYPE.GG100) # GG10
+    unknown1 =  ByteField(3, default=0x01)
+    data    =   StringField(4, length=-1)
+
+    #@property
+    #def is_get(self):
+        #return (self.type & self.TYPE.GET_REPLY_MORE)
 
     @property
     def is_final(self):
-        return (self.type & 0x02)
-ULReplyPacket = inpacket(0x30)(ULReplyPacket)
+        return (self.type & 0x00)
+ULReplyPacket = inpacket(0x41)(ULReplyPacket)
+
+class ULVersion(GaduPacket): # UserListVersion100
+    version =   IntField(0)
+ULVersion = inpacket(0x5c)(ULVersion)
 
 #
 # GG_XML_EVENT and GG_XML_ACTION packets

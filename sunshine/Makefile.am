@@ -14,4 +14,5 @@ sunshine_PYTHON = aliasing.py \
 	handle.py \
 	__init__.py \
 	presence.py \
-	protocol.py
+	protocol.py \
+	Protocol_Interface_Avatars.py

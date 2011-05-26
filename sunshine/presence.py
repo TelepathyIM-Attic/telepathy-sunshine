@@ -165,7 +165,7 @@ class SunshinePresence(telepathy.server.ConnectionInterfaceSimplePresence):
             presences[handle] = dbus.Struct((presence_type, presence, personal_message), signature='uss')
         return presences
 
-    @async
+    #@async
     def _presence_changed(self, handle, presence, personal_message):
         try:
             presence = SunshinePresenceMapping.from_gg_to_tp[presence]
@@ -177,7 +177,7 @@ class SunshinePresence(telepathy.server.ConnectionInterfaceSimplePresence):
         self.PresencesChanged({handle: (presence_type, presence, personal_message)})
 
 
-    @async
+    #@async
     def _self_presence_changed(self, handle, presence, personal_message):
         presence = SunshinePresenceMapping.to_telepathy[presence]
         presence_type = SunshinePresenceMapping.to_presence_type[presence]

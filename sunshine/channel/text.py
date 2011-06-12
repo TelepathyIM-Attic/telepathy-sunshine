@@ -82,6 +82,17 @@ class SunshineTextChannel(SunshineChannel,
         else:
             raise telepathy.NotImplemented("Unhandled message type")
 
+    def SendMessage(self, message, flags):
+        # we should do something about flags, but for now it is not supported
+        if len(message) >= 2:
+            header = message[0]
+            alternatives = message[1:len(message)]
+            for alt in alternatives:
+                if alt["content-type"] == "text/plain":
+                    self.Send(telepathy.CHANNEL_TEXT_MESSAGE_TYPE_NORMAL, alt["content"])
+                    # message identifier should be returned here, but empty string is good unless we want to track delivery
+                    return ''
+
     def Close(self):
         telepathy.server.ChannelTypeText.Close(self)
         #self.remove_from_connection()

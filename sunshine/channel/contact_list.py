@@ -162,7 +162,7 @@ class SunshineSubscribeListChannel(SunshineListChannel):
         self._conn_ref().exportContactsFile()
 
     def _remove(self, handle_id):
-        handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, h)
+        handle = self._conn.handle(telepathy.HANDLE_TYPE_CONTACT, handle_id)
         contact = handle.contact
         if contact is None:
             return True
